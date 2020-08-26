@@ -10,7 +10,6 @@ include = [
 	"**/*.rs",
 	"Cargo.toml",
 ]
-publish = false
 
 [dependencies]
 indexmap = "1.5.1"
