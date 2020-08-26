@@ -1,6 +1,7 @@
 //TODO: Add secondary labels without caption while unrolling due to error. Disarm/return `Ok(())` with  `.void()` on that guard.
 //TODO: Extract this functionality into a separate serde_taml crate.
 
+use cervine::Cow as cCow;
 use indexmap::IndexMap;
 use serde::de;
 use std::{borrow::Cow, ops::Range};
@@ -14,7 +15,6 @@ use taml::{
 	},
 	Token,
 };
-use woc::Woc;
 use wyz::Tap as _;
 
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
@@ -437,8 +437,8 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	{
 		match &self.0.value {
 			TamlValue::String(str) => match str {
-				Woc::Owned(string) => visitor.visit_str(string),
-				Woc::Borrowed(str) => visitor.visit_borrowed_str(str),
+				cCow::Owned(string) => visitor.visit_str(string),
+				cCow::Borrowed(str) => visitor.visit_borrowed_str(str),
 			}
 			.map_err(SerdeError::reporter(self.1, self.0.span.clone())),
 			_ => invalid_type!(self, visitor),
@@ -601,7 +601,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 					assert!(known
 						.insert(
 							Key {
-								name: Woc::Borrowed(EXTRA_FIELDS),
+								name: cCow::Borrowed(EXTRA_FIELDS),
 								span: self.0.span.clone(),
 							},
 							Taml {
