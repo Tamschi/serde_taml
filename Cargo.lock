@@ -65,6 +65,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2eb259a9b90ff20b2608f173b86e537a9a92eaf89dc65322c6ba537b5d75720d"
 
 [[package]]
+name = "cervine"
+version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f0db89834ef04fc63d2f136327b42d532b45def0345213d28690a3446c7bdb5"
+
+[[package]]
 name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -105,9 +111,9 @@ dependencies = [
 
 [[package]]
 name = "debugless-unwrap"
-version = "0.0.1"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a59fcc234b0a628ae47ebe2b298e347a7995fe4f0fcfe5e50ace780bffc062b7"
+checksum = "a3ee47a91953412c437cf7c674e92ba5ce71ae2fd81c16d1a796cb584c763ba5"
 
 [[package]]
 name = "doc-comment"
@@ -170,9 +176,9 @@ checksum = "641b847f0375f4b2c595438eefc17a9c0fbf47b400cbdd1ad9332bf1e16b779d"
 
 [[package]]
 name = "gnaw"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e028ffaed016669f1c7af8eda847d292b120fb4283910b8f49f9906ca3ede09"
+checksum = "a79786fca5da31058bdc23d4a09a3b6ef0e1a77f6982cdcf6151bcbe41290d8b"
 
 [[package]]
 name = "hashbrown"
@@ -222,11 +228,11 @@ dependencies = [
 
 [[package]]
 name = "lazy-transform-str"
-version = "0.0.1"
+version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62a5f11cb98ed67b9fa80672f818f7f7baf2067d2603f1b547326d02dcb7052d"
+checksum = "d3f2f08de5da0353709e66c6302747c07d60186e70d19b172dbdcc51a1de357e"
 dependencies = [
- "cervine",
+ "cervine 0.0.6",
  "gnaw",
  "smartstring",
 ]
@@ -508,7 +514,7 @@ version = "0.0.1"
 dependencies = [
  "cargo-husky",
  "cast",
- "cervine",
+ "cervine 0.0.2",
  "codemap",
  "codemap-diagnostic",
  "doc-comment",
@@ -554,11 +560,11 @@ dependencies = [
 
 [[package]]
 name = "taml"
-version = "0.0.1"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0109448947c4f6ef7a42d0b010e61a15a7223d975147969373c1e46d52189403"
+checksum = "131edc1b3dda4c2c0f08ea4668281b74d618923a09a684b6a810525a34096e85"
 dependencies = [
- "cervine",
+ "cervine 0.0.6",
  "debugless-unwrap",
  "enum_properties",
  "gnaw",

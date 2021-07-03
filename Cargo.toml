@@ -40,7 +40,7 @@ linkme = { version = "0.2.2", optional = true }
 logos = "0.12.0"
 serde = { version = "1.0.115", default-features = false }
 serde-object = { version = "0.0.0-alpha.0", optional = true }
-taml = "0.0.1"
+taml = "0.0.3"
 wyz = "0.2.0"
 
 [dev-dependencies]
