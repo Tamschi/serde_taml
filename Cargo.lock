@@ -458,7 +458,7 @@ dependencies = [
  "linkme",
  "serde",
  "try_match",
- "wyz 0.2.0",
+ "wyz",
 ]
 
 [[package]]
@@ -491,9 +491,9 @@ dependencies = [
  "serde",
  "serde-object",
  "taml",
+ "tap",
  "version-sync",
  "wasm-bindgen-test",
- "wyz 0.4.0",
 ]
 
 [[package]]
@@ -810,12 +810,3 @@ name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
-
-[[package]]
-name = "wyz"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "129e027ad65ce1453680623c3fb5163cbf7107bfe1aa32257e7d0e63f9ced188"
-dependencies = [
- "tap",
-]
