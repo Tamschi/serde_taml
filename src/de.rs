@@ -289,7 +289,7 @@ macro_rules! invalid_type {
 		Err(de::Error::invalid_type(
 			unexpected(&$self.0.value),
 			&$visitor,
-			))
+		))
 		.map_err(SerdeError::reporter($self.1, $self.0.span.clone()))
 	};
 }
