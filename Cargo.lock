@@ -21,9 +21,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "beef"
-version = "0.4.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "474a626a67200bd107d44179bb3d4fc61891172d11696609264589be6a0e6a43"
+checksum = "6736e2428df2ca2848d846c43e88745121a6654696e349ce0054a420815a7409"
 
 [[package]]
 name = "bitflags"
@@ -54,9 +54,9 @@ dependencies = [
 
 [[package]]
 name = "cervine"
-version = "0.0.2"
+version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eb259a9b90ff20b2608f173b86e537a9a92eaf89dc65322c6ba537b5d75720d"
+checksum = "9f0db89834ef04fc63d2f136327b42d532b45def0345213d28690a3446c7bdb5"
 
 [[package]]
 name = "cfg-if"
@@ -99,9 +99,9 @@ dependencies = [
 
 [[package]]
 name = "debugless-unwrap"
-version = "0.0.1"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a59fcc234b0a628ae47ebe2b298e347a7995fe4f0fcfe5e50ace780bffc062b7"
+checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
 
 [[package]]
 name = "doc-comment"
@@ -136,9 +136,9 @@ dependencies = [
 
 [[package]]
 name = "enum_properties"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75fd952080f7bd83714eb291f0c5d178099d4051e69be6701c61c3da3c202823"
+checksum = "b69918c4fbd88f3465ed16714c0270c442abb11dab4cfe4a511f5632d3614384"
 
 [[package]]
 name = "fnv"
@@ -164,9 +164,9 @@ checksum = "641b847f0375f4b2c595438eefc17a9c0fbf47b400cbdd1ad9332bf1e16b779d"
 
 [[package]]
 name = "gnaw"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e028ffaed016669f1c7af8eda847d292b120fb4283910b8f49f9906ca3ede09"
+checksum = "a79786fca5da31058bdc23d4a09a3b6ef0e1a77f6982cdcf6151bcbe41290d8b"
 
 [[package]]
 name = "hashbrown"
@@ -216,9 +216,9 @@ dependencies = [
 
 [[package]]
 name = "lazy-transform-str"
-version = "0.0.1"
+version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62a5f11cb98ed67b9fa80672f818f7f7baf2067d2603f1b547326d02dcb7052d"
+checksum = "d3f2f08de5da0353709e66c6302747c07d60186e70d19b172dbdcc51a1de357e"
 dependencies = [
  "cervine",
  "gnaw",
@@ -268,18 +268,18 @@ dependencies = [
 
 [[package]]
 name = "logos"
-version = "0.11.4"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b91c49573597a5d6c094f9031617bb1fed15c0db68c81e6546d313414ce107e4"
+checksum = "427e2abca5be13136da9afdbf874e6b34ad9001dd70f2b103b083a85daa7b345"
 dependencies = [
  "logos-derive",
 ]
 
 [[package]]
 name = "logos-derive"
-version = "0.11.5"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "797b1f8a0571b331c1b47e7db245af3dc634838da7a92b3bef4e30376ae1c347"
+checksum = "56a7d287fd2ac3f75b11f19a1c8a874a7d55744bd91f7a1b3e7cf87d4343c36d"
 dependencies = [
  "beef",
  "fnv",
@@ -524,9 +524,9 @@ dependencies = [
 
 [[package]]
 name = "taml"
-version = "0.0.1"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0109448947c4f6ef7a42d0b010e61a15a7223d975147969373c1e46d52189403"
+checksum = "05d4b42313cdc90f230d892e2d841356d14f90a2cca76bc7a11ee299b03d7306"
 dependencies = [
  "cervine",
  "debugless-unwrap",
@@ -536,6 +536,7 @@ dependencies = [
  "lazy-transform-str",
  "logos",
  "smartstring",
+ "syn",
  "try_match",
 ]
 
