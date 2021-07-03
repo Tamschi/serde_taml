@@ -33,7 +33,7 @@ maintenance = { status = "experimental" } # This may differ between branches.
 serde-object-assist = ["lazy_static", "linkme", "serde-object/assistant-extra"] #TODO: Document this.
 
 [dependencies]
-cervine = "0.0.2"
+cervine = "0.0.6"
 indexmap = "1.5.1"
 lazy_static = { version = "1.4.0", optional = true }
 linkme = { version = "0.2.2", optional = true }

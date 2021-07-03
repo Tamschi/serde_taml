@@ -54,12 +54,6 @@ dependencies = [
 
 [[package]]
 name = "cervine"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eb259a9b90ff20b2608f173b86e537a9a92eaf89dc65322c6ba537b5d75720d"
-
-[[package]]
-name = "cervine"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f0db89834ef04fc63d2f136327b42d532b45def0345213d28690a3446c7bdb5"
@@ -226,7 +220,7 @@ version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3f2f08de5da0353709e66c6302747c07d60186e70d19b172dbdcc51a1de357e"
 dependencies = [
- "cervine 0.0.6",
+ "cervine",
  "gnaw",
  "smartstring",
 ]
@@ -484,7 +478,7 @@ version = "0.0.1"
 dependencies = [
  "cargo-husky",
  "cast",
- "cervine 0.0.2",
+ "cervine",
  "codemap",
  "codemap-diagnostic",
  "doc-comment",
@@ -534,7 +528,7 @@ version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05d4b42313cdc90f230d892e2d841356d14f90a2cca76bc7a11ee299b03d7306"
 dependencies = [
- "cervine 0.0.6",
+ "cervine",
  "debugless-unwrap",
  "enum_properties",
  "gnaw",
