@@ -458,7 +458,7 @@ dependencies = [
  "linkme",
  "serde",
  "try_match",
- "wyz",
+ "wyz 0.2.0",
 ]
 
 [[package]]
@@ -493,7 +493,7 @@ dependencies = [
  "taml",
  "version-sync",
  "wasm-bindgen-test",
- "wyz",
+ "wyz 0.4.0",
 ]
 
 [[package]]
@@ -539,6 +539,12 @@ dependencies = [
  "syn",
  "try_match",
 ]
+
+[[package]]
+name = "tap"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "termcolor"
@@ -804,3 +810,12 @@ name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
+
+[[package]]
+name = "wyz"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "129e027ad65ce1453680623c3fb5163cbf7107bfe1aa32257e7d0e63f9ced188"
+dependencies = [
+ "tap",
+]
