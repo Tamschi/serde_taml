@@ -31,7 +31,8 @@ jobs:
     - run: cat CI.toml >> Cargo.toml
     - run: cargo +stable test --workspace --locked --target wasm32-unknown-unknown --no-default-features
     - run: cargo +stable test --workspace --locked --target wasm32-unknown-unknown
-    - run: cargo +stable test --workspace --locked --target wasm32-unknown-unknown --all-features
+    # `linkme` is not available for Wasm targets yet.
+    # - run: cargo +stable test --workspace --locked --target wasm32-unknown-unknown --all-features
 
   check:
     name: Check on Rust ${{matrix.rust}}${{format(' ({0})', matrix.target || matrix.os)}}
