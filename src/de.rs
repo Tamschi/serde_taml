@@ -31,7 +31,7 @@ impl std::fmt::Display for Error {
 }
 impl std::error::Error for Error {}
 impl de::Error for Error {
-	// This error type is never constructed directly.
+	// This error type is never constructed directly. // <- This is wrong.
 	fn custom<T>(_msg: T) -> Self
 	where
 		T: std::fmt::Display,
