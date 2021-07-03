@@ -7,7 +7,8 @@
 TODO: Date
 
 - **Breaking**:
-  - Changed license to `MIT OR Apache-2.0`
+  - Changed license to `MIT OR Apache-2.0`.
+  - Set minimum Rust version to 1.53.
 
 ## 0.0.1
 
