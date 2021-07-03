@@ -193,7 +193,7 @@ impl SerdeError {
 		}
 	}
 
-	fn silence(_error: Error) -> SerdeError {
+	fn silence(_: Error) -> SerdeError {
 		SerdeError::Silent
 	}
 }
@@ -696,7 +696,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 			payload: &'a VariantPayload<'de, Position>,
 			span: Range<Position>,
 			reporter: &'a mut Reporter,
-		};
+		}
 
 		impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>>
 			de::VariantAccess<'de> for VariantAccess<'a, 'de, Position, Reporter>
