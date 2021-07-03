@@ -8,7 +8,8 @@ TODO: Date
 
 - **Breaking**:
   - Changed license to `MIT OR Apache-2.0`.
-  - Set minimum Rust version to 1.53.
+  - Set minimum Rust version to 1.53
+    > which is required by the newer `taml` dependency.
 
 ## 0.0.1
 

@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/serde_taml)](https://crates.io/crates/serde_taml)
 [![Docs.rs](https://docs.rs/serde_taml/badge.svg)](https://docs.rs/serde_taml)
 
-![Rust 1.51](https://img.shields.io/static/v1?logo=Rust&label=&message=1.51&color=grey)
+![Rust 1.53](https://img.shields.io/static/v1?logo=Rust&label=&message=1.53&color=grey)
 [![CI](https://github.com/Tamschi/serde_taml/workflows/CI/badge.svg?branch=develop)](https://github.com/Tamschi/serde_taml/actions?query=workflow%3ACI+branch%3Adevelop)
 ![Crates.io - License](https://img.shields.io/crates/l/serde_taml/0.0.1)
 
