@@ -15,7 +15,7 @@ use taml::{
 	},
 	Token,
 };
-use wyz::Tap as _;
+use tap::Tap as _;
 
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
 	pub &'a Taml<'de, Position>,
@@ -665,7 +665,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 				#[cfg(feature = "serde-object-assist")]
 				{
 					use serde_object::assistant::VariantKind;
-					use wyz::Pipe as _;
+					use tap::Pipe as _;
 
 					*HINT.lock().unwrap() = match &self.1 {
 						VariantPayload::Structured(map) => VariantKind::Struct(
