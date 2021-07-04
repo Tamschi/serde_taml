@@ -31,6 +31,11 @@ pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Positio
 pub struct Error {
 	kind: ErrorKind,
 }
+impl Error {
+	fn invalid_value(msg: &'static str) -> Self {
+		ErrorKind::InvalidValue { msg }.into()
+	}
+}
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		todo!()
@@ -39,34 +44,37 @@ impl fmt::Display for Error {
 
 #[derive(Debug)]
 enum ErrorKind {
-	Custom {
+	SerdeCustom {
 		msg: String,
 	},
-	InvalidType {
+	SerdeInvalidType {
 		unexpected: String,
 		expected: String,
 	},
-	InvalidValue {
+	SerdeInvalidValue {
 		unexpected: String,
 		expected: String,
 	},
-	InvalidLength {
+	SerdeInvalidLength {
 		len: usize,
 		expected: String,
 	},
-	UnknownVariant {
+	SerdeUnknownVariant {
 		variant: String,
 		expected: &'static [&'static str],
 	},
-	UnknownField {
+	SerdeUnknownField {
 		field: String,
 		expected: &'static [&'static str],
 	},
-	MissingField {
+	SerdeMissingField {
 		field: &'static str,
 	},
-	DuplicateField {
+	SerdeDuplicateField {
 		field: &'static str,
+	},
+	InvalidValue {
+		msg: &'static str,
 	},
 	Reported,
 }
@@ -89,51 +97,51 @@ impl de::Error for Error {
 	where
 		T: fmt::Display,
 	{
-		ErrorKind::Custom {
+		ErrorKind::SerdeCustom {
 			msg: msg.to_string(),
 		}
 		.into()
 	}
 	fn invalid_type(unexp: de::Unexpected, exp: &dyn de::Expected) -> Self {
-		ErrorKind::InvalidType {
+		ErrorKind::SerdeInvalidType {
 			unexpected: unexp.to_string(),
 			expected: exp.to_string(),
 		}
 		.into()
 	}
 	fn invalid_value(unexp: de::Unexpected, exp: &dyn de::Expected) -> Self {
-		ErrorKind::InvalidValue {
+		ErrorKind::SerdeInvalidValue {
 			unexpected: unexp.to_string(),
 			expected: exp.to_string(),
 		}
 		.into()
 	}
 	fn invalid_length(len: usize, exp: &dyn de::Expected) -> Self {
-		ErrorKind::InvalidLength {
+		ErrorKind::SerdeInvalidLength {
 			len,
 			expected: exp.to_string(),
 		}
 		.into()
 	}
 	fn unknown_variant(variant: &str, expected: &'static [&'static str]) -> Self {
-		ErrorKind::UnknownVariant {
+		ErrorKind::SerdeUnknownVariant {
 			variant: variant.to_string(),
 			expected,
 		}
 		.into()
 	}
 	fn unknown_field(field: &str, expected: &'static [&'static str]) -> Self {
-		ErrorKind::UnknownField {
+		ErrorKind::SerdeUnknownField {
 			field: field.to_string(),
 			expected,
 		}
 		.into()
 	}
 	fn missing_field(field: &'static str) -> Self {
-		ErrorKind::MissingField { field }.into()
+		ErrorKind::SerdeMissingField { field }.into()
 	}
 	fn duplicate_field(field: &'static str) -> Self {
-		ErrorKind::DuplicateField { field }.into()
+		ErrorKind::SerdeDuplicateField { field }.into()
 	}
 }
 
@@ -174,34 +182,56 @@ pub fn from_taml<'de, T: de::Deserialize<'de>, Position: Clone + Ord>(
 	T::deserialize(&mut Deserializer(&taml, reporter))
 }
 
-trait ReportAt<Position> {
-	fn report_at(self, reporter: &mut impl diagReporter<Position>, span: &Range<Position>) -> Self;
+trait ReportFor<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self;
 }
-impl<Position, V> ReportAt<Position> for Result<V> {
-	fn report_at(self, reporter: &mut impl diagReporter<Position>, span: &Range<Position>) -> Self {
+impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
+	ReportFor<'a, 'de, Position, Reporter> for Result<V>
+{
+	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self {
 		match self {
 			Ok(ok) => Ok(ok),
 			Err(e) => {
 				match e.kind {
-					ErrorKind::Custom { msg } => todo!(),
-					ErrorKind::InvalidType {
+					ErrorKind::SerdeCustom { msg } => todo!(),
+					ErrorKind::SerdeInvalidType {
 						unexpected,
 						expected,
 					} => todo!(),
-					ErrorKind::InvalidValue {
+					ErrorKind::SerdeInvalidValue {
 						unexpected,
 						expected,
 					} => todo!(),
-					ErrorKind::InvalidLength { len, expected } => todo!(),
-					ErrorKind::UnknownVariant { variant, expected } => todo!(),
-					ErrorKind::UnknownField { field, expected } => todo!(),
-					ErrorKind::MissingField { field } => todo!(),
-					ErrorKind::DuplicateField { field } => todo!(),
+					ErrorKind::SerdeInvalidLength { len, expected } => todo!(),
+					ErrorKind::SerdeUnknownVariant { variant, expected } => todo!(),
+					ErrorKind::SerdeUnknownField { field, expected } => todo!(),
+					ErrorKind::SerdeMissingField { field } => todo!(),
+					ErrorKind::SerdeDuplicateField { field } => todo!(),
 					ErrorKind::Reported => (),
 				};
 				Err(ErrorKind::Reported.into())
 			}
 		}
+	}
+}
+
+trait ReportInvalidValue {
+	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V>;
+}
+impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> ReportInvalidValue
+	for &mut Deserializer<'a, 'de, Position, Reporter>
+{
+	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
+		let span = self.0.span.clone().into();
+		self.1.report_with(move || Diagnostic {
+			r#type: DiagnosticType::InvalidValue,
+			labels: vec![DiagnosticLabel {
+				caption: msg.pipe(Cow::Borrowed).into(),
+				span,
+				priority: DiagnosticLabelPriority::Primary,
+			}],
+		});
+		Err(ErrorKind::Reported.into())
 	}
 }
 
@@ -215,7 +245,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 		V: de::Visitor<'de>,
 	{
 		match &self.0.value {
-			TamlValue::String(s) => visitor.visit_str(s).report_at(self.1, &self.0.span),
+			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
 			TamlValue::Integer(i) => todo!(),
 			TamlValue::Float(f) => todo!(),
 			TamlValue::List(l) => todo!(),
@@ -232,25 +262,12 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 			TamlValue::EnumVariant {
 				key: Key { name, .. },
 				payload: VariantPayload::Unit,
-			} if name == "true" => visitor.visit_bool(true).report_at(self.1, &self.0.span),
+			} if name == "true" => visitor.visit_bool(true).report_for(self),
 			TamlValue::EnumVariant {
 				key: Key { name, .. },
 				payload: VariantPayload::Unit,
-			} if name == "false" => visitor.visit_bool(false).report_at(self.1, &self.0.span),
-			_ => {
-				let span = self.0.span.clone().into();
-				self.1.report_with(move || Diagnostic {
-					r#type: DiagnosticType::InvalidValue,
-					labels: vec![DiagnosticLabel {
-						caption: "Expected boolean unit variant `true` or `false`."
-							.pipe(Cow::Borrowed)
-							.into(),
-						span,
-						priority: DiagnosticLabelPriority::Primary,
-					}],
-				});
-				Err(ErrorKind::Reported.into())
-			}
+			} if name == "false" => visitor.visit_bool(false).report_for(self),
+			_ => self.report_invalid_value("Expected boolean unit variant `true` or `false`."),
 		}
 	}
 
@@ -259,8 +276,14 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 		V: de::Visitor<'de>,
 	{
 		match &self.0.value {
-			TamlValue::Integer(i) => visitor.visit_i8(i.parse::<i8>().map_err(|e| todo!())?),
-			_ => todo!(),
+			TamlValue::Integer(i) => visitor
+				.visit_i8(
+					i.parse()
+						.map_err(|_| Error::invalid_value("Expected i8."))
+						.report_for(self)?,
+				)
+				.report_for(self),
+			_ => self.report_invalid_value("Expected i8."),
 		}
 	}
 
@@ -472,7 +495,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	where
 		V: de::Visitor<'de>,
 	{
-		visitor.visit_unit().report_at(self.1, &self.0.span)
+		visitor.visit_unit().report_for(self)
 	}
 
 	fn is_human_readable(&self) -> bool {
