@@ -1,14 +1,11 @@
 //TODO: Add secondary labels without caption: (), span: (), priority: ()  caption while unrolling due to error. Disarm/return `Ok(())` with  `.void()` on that guard.
 //TODO: Extract this functionality into a separate serde_taml crate.
 
-use cervine::Cow as cCow;
-use indexmap::IndexMap;
 use paste::paste;
 use serde::de;
 use std::{
 	borrow::Cow,
-	convert::TryInto,
-	fmt::{self, Debug, Display, Formatter},
+	fmt::{self, Debug, Formatter},
 	ops::Range,
 };
 use taml::{
@@ -16,12 +13,10 @@ use taml::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
 		Reporter as diagReporter,
 	},
-	parsing::{
-		parse, IntoToken, Key, List, ListIter, Map, MapIter, Taml, TamlValue, VariantPayload,
-	},
+	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
 	Token,
 };
-use tap::{Pipe, Tap as _};
+use tap::Pipe;
 
 mod key_deserializer;
 mod struct_access;

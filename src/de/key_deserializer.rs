@@ -1,8 +1,6 @@
-use super::Error;
-use super::ReportAt;
+use super::{Error, ReportAt};
 use serde::Deserializer;
-use taml::diagnostics::Reporter as diagReporter;
-use taml::parsing::Key;
+use taml::{diagnostics::Reporter as diagReporter, parsing::Key};
 
 pub struct KeyDeserializer<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
 	pub key: Key<'de, Position>,
