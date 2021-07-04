@@ -3,6 +3,7 @@
 
 use cervine::Cow as cCow;
 use indexmap::IndexMap;
+use paste::paste;
 use serde::de;
 use std::{
 	borrow::Cow,
@@ -207,6 +208,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
 					ErrorKind::SerdeUnknownField { field, expected } => todo!(),
 					ErrorKind::SerdeMissingField { field } => todo!(),
 					ErrorKind::SerdeDuplicateField { field } => todo!(),
+					ErrorKind::InvalidValue { msg } => todo!(),
 					ErrorKind::Reported => (),
 				};
 				Err(ErrorKind::Reported.into())
@@ -233,6 +235,28 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> ReportInv
 		});
 		Err(ErrorKind::Reported.into())
 	}
+}
+
+macro_rules! parsed {
+	($Variant:ident => $($Type:ident),*$(,)?) => {$(
+		paste! {
+			fn [<deserialize_ $Type>]<V>(self, visitor: V) -> Result<V::Value>
+			where
+				V: de::Visitor<'de>,
+			{
+				match &self.0.value {
+					TamlValue::$Variant(v) => visitor
+						.[<visit_ $Type>](
+							v.parse()
+								.map_err(|_| Error::invalid_value(concat!("Expected ", stringify!($Type), ".")))
+								.report_for(self)?,
+						)
+						.report_for(self),
+					_ => self.report_invalid_value(concat!("Expected ", stringify!($Type), ".")),
+				}
+			}
+		}
+	)*};
 }
 
 impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deserializer<'de>
@@ -271,118 +295,41 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 		}
 	}
 
-	fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		match &self.0.value {
-			TamlValue::Integer(i) => visitor
-				.visit_i8(
-					i.parse()
-						.map_err(|_| Error::invalid_value("Expected i8."))
-						.report_for(self)?,
-				)
-				.report_for(self),
-			_ => self.report_invalid_value("Expected i8."),
-		}
-	}
-
-	fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
-
-	fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
-	where
-		V: de::Visitor<'de>,
-	{
-		todo!()
-	}
+	parsed!(Integer => i8, i16, i32, i64, i128);
+	parsed!(Integer => u8, u16, u32, u64, u128);
+	parsed!(Float => f32, f64);
 
 	fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::String(s) => visitor
+				.visit_char(
+					s.parse()
+						.map_err(|_| Error::invalid_value("Expected single character string."))
+						.report_for(self)?,
+				)
+				.report_for(self),
+			_ => self.report_invalid_value("Expected single character string."),
+		}
 	}
 
 	fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
+			_ => self.report_invalid_value("Expected string."),
+		}
 	}
 
 	fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		self.deserialize_str(visitor)
 	}
 
 	fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
