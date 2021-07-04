@@ -53,7 +53,7 @@ fn deserializer() {
 	}
 
 	assert_eq!(
-		dbg!(from_str(
+		dbg!(from_str::<Deserializable, _>(
 			"
                 some: ()
 
@@ -105,8 +105,9 @@ fn deserializer() {
                 true: true
             ",
 			&mut ()
-		)),
-		Ok(Deserializable {
+		))
+		.unwrap(),
+		Deserializable {
 			none: None,
 			some: Some(()),
 
@@ -156,6 +157,6 @@ fn deserializer() {
 
 			r#false: false,
 			r#true: true,
-		})
+		}
 	);
 }

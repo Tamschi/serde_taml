@@ -177,13 +177,13 @@ fn extra_fields() {
     unknown: \"It is unknowable.\"\n";
 	let mut diagnostics = vec![];
 	assert_eq!(
-		from_str::<ExtraFields, _>(text, &mut diagnostics),
-		Ok(ExtraFields {
+		from_str::<ExtraFields, _>(text, &mut diagnostics).unwrap(),
+		ExtraFields {
 			known: "It is known.".to_string(),
 			extra_fields: indexmap! {
 				"unknown".to_string() => "It is unknowable.".to_string()
 			},
-		}),
+		},
 		"diagnostics: {:?}",
 		diagnostics
 	);
@@ -207,11 +207,11 @@ fn ignored_extra_fields() {
     unknown: \"It is unknowable.\"\n";
 	let mut diagnostics = vec![];
 	assert_eq!(
-		from_str::<IgnoredExtraFields, _>(text, &mut diagnostics),
-		Ok(IgnoredExtraFields {
+		from_str::<IgnoredExtraFields, _>(text, &mut diagnostics).unwrap(),
+		IgnoredExtraFields {
 			known: "It is known.".to_string(),
 			extra_fields: IgnoredAny,
-		}),
+		},
 		"diagnostics: {:?}",
 		diagnostics
 	);
