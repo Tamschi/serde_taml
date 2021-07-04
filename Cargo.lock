@@ -122,6 +122,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
 name = "enum-ordinalize"
 version = "3.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -489,6 +495,7 @@ dependencies = [
  "codemap-diagnostic",
  "doc-comment",
  "educe",
+ "either",
  "git_info",
  "indexmap",
  "lazy_static",
@@ -531,9 +538,9 @@ dependencies = [
 
 [[package]]
 name = "taml"
-version = "0.0.4"
+version = "0.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05d4b42313cdc90f230d892e2d841356d14f90a2cca76bc7a11ee299b03d7306"
+checksum = "361e9f9aa1431a71473d9233c24260ae7ecc376097885c63edf4191e548cf8c6"
 dependencies = [
  "cervine",
  "debugless-unwrap",

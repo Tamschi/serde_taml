@@ -23,10 +23,20 @@ use taml::{
 };
 use tap::{Pipe, Tap as _};
 
+mod key_deserializer;
+mod struct_access;
+
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
 	pub &'a Taml<'de, Position>,
 	pub &'a mut Reporter,
 );
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
+	Deserializer<'a, 'de, Position, Reporter>
+{
+	fn by_ref(&mut self) -> Deserializer<'_, 'de, Position, Reporter> {
+		Deserializer(self.0, self.1)
+	}
+}
 
 #[derive(Debug)]
 pub struct Error {
@@ -217,6 +227,20 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
 	}
 }
 
+trait ReportAt<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self;
+}
+impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
+	ReportAt<'a, 'de, Position, Reporter> for Result<V>
+{
+	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self {
+		match self {
+			Ok(ok) => Ok(ok),
+			Err(_) => todo!(),
+		}
+	}
+}
+
 trait ReportInvalidValue {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V>;
 }
@@ -350,28 +374,34 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		// Options are flattened; that there's this `Deserializer` instance at all already means there is a value here.
+		visitor.visit_some(&mut self.by_ref()).report_for(self)
 	}
 
 	fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::List(l) if l.is_empty() => visitor.visit_unit().report_for(self),
+			_ => self.report_invalid_value("Expected `()`."),
+		}
 	}
 
-	fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+	fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		self.deserialize_unit(visitor)
 	}
 
-	fn deserialize_newtype_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+	fn deserialize_newtype_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		visitor
+			.visit_newtype_struct(&mut self.by_ref())
+			.report_for(self)
 	}
 
 	fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
@@ -409,14 +439,24 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 
 	fn deserialize_struct<V>(
 		self,
-		name: &'static str,
+		_name: &'static str,
 		fields: &'static [&'static str],
 		visitor: V,
 	) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::Map(m) => visitor
+				.visit_map(struct_access::StructAccess::new(
+					self.1,
+					self.0.span.clone(),
+					m,
+					fields,
+				))
+				.report_for(self),
+			_ => self.report_invalid_value("Expected struct."),
+		}
 	}
 
 	fn deserialize_enum<V>(
