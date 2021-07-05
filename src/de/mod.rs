@@ -19,6 +19,7 @@ use taml::{
 use tap::Pipe;
 
 mod key_deserializer;
+mod list_access;
 mod struct_access;
 
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
@@ -278,6 +279,7 @@ macro_rules! parsed {
 	)*};
 }
 
+#[allow(clippy::non_ascii_literal)]
 impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deserializer<'de>
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
@@ -326,11 +328,13 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 			TamlValue::String(s) => visitor
 				.visit_char(
 					s.parse()
-						.map_err(|_| Error::invalid_value("Expected single character string."))
+						.map_err(|_| {
+							Error::invalid_value("Expected single character string (`\"…\"`).")
+						})
 						.report_for(self)?,
 				)
 				.report_for(self),
-			_ => self.report_invalid_value("Expected single character string."),
+			_ => self.report_invalid_value("Expected single character string (`\"…\"`)."),
 		}
 	}
 
@@ -340,7 +344,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	{
 		match &self.0.value {
 			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
-			_ => self.report_invalid_value("Expected string."),
+			_ => self.report_invalid_value("Expected string (`\"…\"`)."),
 		}
 	}
 
@@ -379,7 +383,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	{
 		match &self.0.value {
 			TamlValue::List(l) if l.is_empty() => visitor.visit_unit().report_for(self),
-			_ => self.report_invalid_value("Expected `()`."),
+			_ => self.report_invalid_value("Expected unit (`()`)."),
 		}
 	}
 
@@ -403,7 +407,12 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::List(l) => visitor
+				.visit_seq(list_access::ListAccess::new(self.1, self.0.span.clone(), l))
+				.report_for(self),
+			_ => self.report_invalid_value("Expected list (`(…)`)."),
+		}
 	}
 
 	fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
@@ -429,7 +438,17 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::Map(m) => visitor
+				.visit_map(struct_access::StructAccess::new(
+					self.1,
+					self.0.span.clone(),
+					m,
+					&[],
+				))
+				.report_for(self),
+			_ => self.report_invalid_value("Expected map."),
+		}
 	}
 
 	fn deserialize_struct<V>(
