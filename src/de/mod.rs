@@ -13,7 +13,7 @@ use taml::{
 	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
 	Token,
 };
-use tap::{Conv, Pipe};
+use tap::Pipe;
 
 mod key_deserializer;
 mod list_access;
