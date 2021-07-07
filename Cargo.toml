@@ -34,6 +34,7 @@ serde-object-assist = ["lazy_static", "linkme", "serde-object/assistant-extra"] 
 
 [dependencies]
 cervine = "0.0.6"
+debugless-unwrap = "0.0.4"
 either = "1.6.1"
 indexmap = "1.5.1"
 lazy_static = { version = "1.4.0", optional = true }
@@ -44,6 +45,7 @@ serde = { version = "1.0.115", default-features = false }
 serde-object = { version = "0.0.0-alpha.0", optional = true }
 taml = "0.0.5"
 tap = "1.0.1"
+try_match = "0.2.2"
 
 [dev-dependencies]
 cargo-husky = "1.5.0"

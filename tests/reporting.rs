@@ -66,13 +66,32 @@ fn no_fields_multi() {
 #[derive(Debug, PartialEq, Deserialize)]
 struct ThreeFields {
 	#[serde(default)]
-	field_1: Option<i8>,
+	field_1: i8,
 
 	#[serde(default)]
-	field_2: Option<String>,
+	field_2: String,
 
 	#[serde(default)]
-	field_3: Option<f32>,
+	field_3: f32,
+}
+
+#[test]
+fn unknown_field() {
+	let text = "key: \"value\"\n";
+	let mut diagnostics = vec![];
+	from_str::<NoFields, _>(text, &mut diagnostics).unwrap_err();
+	assert_eq!(
+		diagnostics.as_slice(),
+		&[tamlDiagnostic {
+			r#type: DiagnosticType::UnknownField,
+			labels: vec![DiagnosticLabel::new(
+				"Expected `field_1`, `field_2` or `field_3`.",
+				0..3,
+				DiagnosticLabelPriority::Primary,
+			)]
+		}]
+	);
+	report(text, diagnostics)
 }
 
 #[test]
@@ -116,7 +135,7 @@ fn expect_i8() {
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected i8 here.",
+				"Expected i8.",
 				4..11,
 				DiagnosticLabelPriority::Primary,
 			)]
@@ -135,7 +154,7 @@ fn expect_string() {
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected a string here.",
+				r#"Expected string (`"…"`)."#,
 				8..9,
 				DiagnosticLabelPriority::Primary,
 			)]
@@ -154,7 +173,7 @@ fn expect_f32() {
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected f32 here.",
+				"Expected f32.",
 				5..20,
 				DiagnosticLabelPriority::Primary,
 			)]

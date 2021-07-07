@@ -2,11 +2,11 @@ use super::{Error, ReportAt};
 use serde::Deserializer;
 use taml::{diagnostics::Reporter as diagReporter, parsing::Key};
 
-pub struct KeyDeserializer<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+pub struct KeyDeserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
 	pub key: Key<'de, Position>,
 	pub reporter: &'a mut Reporter,
 }
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> Deserializer<'de>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> Deserializer<'de>
 	for KeyDeserializer<'a, 'de, Position, Reporter>
 {
 	type Error = Error;

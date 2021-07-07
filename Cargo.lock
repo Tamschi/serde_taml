@@ -493,6 +493,7 @@ dependencies = [
  "cervine",
  "codemap",
  "codemap-diagnostic",
+ "debugless-unwrap",
  "doc-comment",
  "educe",
  "either",
@@ -506,6 +507,7 @@ dependencies = [
  "serde-object",
  "taml",
  "tap",
+ "try_match",
  "version-sync",
  "wasm-bindgen-test",
 ]

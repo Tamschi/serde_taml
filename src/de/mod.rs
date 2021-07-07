@@ -1,3 +1,4 @@
+use self::enum_access::EnumAndVariantAccess;
 use paste::paste;
 use serde::de;
 use std::{
@@ -13,8 +14,9 @@ use taml::{
 	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
 	Token,
 };
-use tap::Pipe;
+use tap::{Conv, Pipe};
 
+mod enum_access;
 mod key_deserializer;
 mod list_access;
 mod struct_access;
@@ -39,10 +41,37 @@ impl Error {
 	fn invalid_value(msg: &'static str) -> Self {
 		ErrorKind::InvalidValue { msg }.into()
 	}
+	fn is_reported(&self) -> bool {
+		match self.kind {
+			ErrorKind::Reported => true,
+			_ => false,
+		}
+	}
 }
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		todo!()
+		match &self.kind {
+			ErrorKind::SerdeCustom { msg } => todo!(),
+			ErrorKind::SerdeInvalidType {
+				unexpected,
+				expected,
+			} => write!(
+				f,
+				"Invalid type: Expected {} but found {}",
+				expected, unexpected
+			),
+			ErrorKind::SerdeInvalidValue {
+				unexpected,
+				expected,
+			} => todo!(),
+			ErrorKind::SerdeInvalidLength { len, expected } => todo!(),
+			ErrorKind::SerdeUnknownVariant { variant, expected } => todo!(),
+			ErrorKind::SerdeUnknownField { field, expected } => todo!(),
+			ErrorKind::SerdeMissingField { field } => todo!(),
+			ErrorKind::SerdeDuplicateField { field } => todo!(),
+			ErrorKind::InvalidValue { msg } => todo!(),
+			ErrorKind::Reported => write!(f, "Reported"),
+		}
 	}
 }
 
@@ -86,11 +115,6 @@ enum ErrorKind {
 impl From<ErrorKind> for Error {
 	fn from(kind: ErrorKind) -> Self {
 		Self { kind }
-	}
-}
-impl From<()> for Error {
-	fn from(_: ()) -> Self {
-		ErrorKind::Reported.into()
 	}
 }
 
@@ -162,12 +186,12 @@ pub fn from_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>>(
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub fn from_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default + Ord>(
+pub fn from_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
 	tokens: impl IntoIterator<Item = impl IntoToken<'de, Position>>,
 	reporter: &mut impl diagReporter<Position>,
 ) -> Result<T> {
 	//TODO: This seems overly explicit.
-	let root = parse(tokens, reporter)?;
+	let root = parse(tokens, reporter).map_err(|()| ErrorKind::Reported.conv::<Error>())?;
 
 	from_taml(
 		&Taml {
@@ -179,17 +203,17 @@ pub fn from_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default + Ord
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub fn from_taml<'de, T: de::Deserialize<'de>, Position: Clone + Ord>(
+pub fn from_taml<'de, T: de::Deserialize<'de>, Position: Clone>(
 	taml: &Taml<'de, Position>,
 	reporter: &mut impl diagReporter<Position>,
 ) -> Result<T> {
 	T::deserialize(&mut Deserializer(&taml, reporter))
 }
 
-trait ReportFor<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+trait ReportFor<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
 	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self;
 }
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>, V>
 	ReportFor<'a, 'de, Position, Reporter> for Result<V>
 {
 	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self {
@@ -220,30 +244,56 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
 	}
 }
 
-trait ReportAt<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+trait ReportAt<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
 	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self;
 }
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>, V>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>, V>
 	ReportAt<'a, 'de, Position, Reporter> for Result<V>
 {
 	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self {
 		match self {
 			Ok(ok) => Ok(ok),
-			Err(_) => todo!(),
+			Err(err) => {
+				if !err.is_reported() {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::CustomErrorFromVisitor,
+						labels: vec![DiagnosticLabel {
+							caption: err.to_string().pipe(Cow::Owned::<str>).into(),
+							span: span.into(),
+							priority: DiagnosticLabelPriority::Primary,
+						}],
+					});
+				}
+				Err(ErrorKind::Reported.into())
+			}
 		}
 	}
 }
 
-trait ReportInvalidValue {
+trait ReportInvalid {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V>;
+	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V>;
 }
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> ReportInvalidValue
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
 		let span = self.0.span.clone().into();
 		self.1.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidValue,
+			labels: vec![DiagnosticLabel {
+				caption: msg.pipe(Cow::Borrowed).into(),
+				span,
+				priority: DiagnosticLabelPriority::Primary,
+			}],
+		});
+		Err(ErrorKind::Reported.into())
+	}
+
+	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V> {
+		let span = self.0.span.clone().into();
+		self.1.report_with(move || Diagnostic {
+			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel {
 				caption: msg.pipe(Cow::Borrowed).into(),
 				span,
@@ -269,7 +319,7 @@ macro_rules! parsed {
 								.report_for(self)?,
 						)
 						.report_for(self),
-					_ => self.report_invalid_value(concat!("Expected ", stringify!($Type), ".")),
+					_ => self.report_invalid_type(concat!("Expected ", stringify!($Type), ".")),
 				}
 			}
 		}
@@ -277,7 +327,7 @@ macro_rules! parsed {
 }
 
 #[allow(clippy::non_ascii_literal)]
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deserializer<'de>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserializer<'de>
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	type Error = Error;
@@ -309,7 +359,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 				key: Key { name, .. },
 				payload: VariantPayload::Unit,
 			} if name == "false" => visitor.visit_bool(false).report_for(self),
-			_ => self.report_invalid_value("Expected boolean unit variant `true` or `false`."),
+			_ => self.report_invalid_type("Expected boolean unit variant `true` or `false`."),
 		}
 	}
 
@@ -331,7 +381,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 						.report_for(self)?,
 				)
 				.report_for(self),
-			_ => self.report_invalid_value("Expected single character string (`\"…\"`)."),
+			_ => self.report_invalid_type("Expected single character string (`\"…\"`)."),
 		}
 	}
 
@@ -341,7 +391,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	{
 		match &self.0.value {
 			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
-			_ => self.report_invalid_value("Expected string (`\"…\"`)."),
+			_ => self.report_invalid_type("Expected string (`\"…\"`)."),
 		}
 	}
 
@@ -378,10 +428,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
-			TamlValue::List(l) if l.is_empty() => visitor.visit_unit().report_for(self),
-			_ => self.report_invalid_value("Expected unit (`()`)."),
-		}
+		panic!("Unit types are not currently supported by `serde_taml`.")
 	}
 
 	fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
@@ -408,7 +455,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 			TamlValue::List(l) => visitor
 				.visit_seq(list_access::ListAccess::new(self.1, self.0.span.clone(), l))
 				.report_for(self),
-			_ => self.report_invalid_value("Expected list (`(…)`)."),
+			_ => self.report_invalid_type("Expected list (`(…)`)."),
 		}
 	}
 
@@ -444,7 +491,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 					&[],
 				))
 				.report_for(self),
-			_ => self.report_invalid_value("Expected map."),
+			_ => self.report_invalid_type("Expected map."),
 		}
 	}
 
@@ -466,7 +513,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 					fields,
 				))
 				.report_for(self),
-			_ => self.report_invalid_value("Expected struct."),
+			_ => self.report_invalid_type("Expected struct."),
 		}
 	}
 
@@ -480,10 +527,10 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 		V: de::Visitor<'de>,
 	{
 		match &self.0.value {
-			TamlValue::EnumVariant { key, payload } => {
-				todo!()
-			}
-			_ => self.report_invalid_value("Expected enum."),
+			TamlValue::EnumVariant { .. } => visitor
+				.visit_enum(EnumAndVariantAccess(self))
+				.report_for(self),
+			_ => self.report_invalid_type("Expected enum."),
 		}
 	}
 

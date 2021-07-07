@@ -8,12 +8,12 @@ use taml::{
 use tap::Pipe;
 
 #[allow(clippy::type_complexity)]
-pub struct ListAccess<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+pub struct ListAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
 	reporter: &'a mut Reporter,
 	span: Range<Position>,
 	entries: Box<dyn 'a + Iterator<Item = &'a Taml<'de, Position>>>,
 }
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	ListAccess<'a, 'de, Position, Reporter>
 {
 	#[allow(clippy::ptr_arg)]
@@ -30,7 +30,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>>
 	}
 }
 
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::SeqAccess<'de>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::SeqAccess<'de>
 	for ListAccess<'a, 'de, Position, Reporter>
 {
 	type Error = Error;

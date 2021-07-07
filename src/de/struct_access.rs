@@ -1,7 +1,7 @@
 use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportAt};
 use cervine::Cow;
 use either::Either;
-use serde::de;
+use serde::{de, forward_to_deserialize_any};
 use std::ops::Range;
 use taml::{
 	diagnostics::Reporter as diagReporter,
@@ -10,7 +10,7 @@ use taml::{
 use tap::Pipe;
 
 #[allow(clippy::type_complexity)]
-pub struct StructAccess<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> {
+pub struct StructAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
 	reporter: &'a mut Reporter,
 	span: Range<Position>,
 	entries: Box<
@@ -24,7 +24,7 @@ pub struct StructAccess<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<P
 	>,
 	next_value: Option<Either<&'a Taml<'de, Position>, &'static str>>,
 }
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	StructAccess<'a, 'de, Position, Reporter>
 {
 	pub fn new(
@@ -57,7 +57,7 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>>
 	}
 }
 
-impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::MapAccess<'de>
+impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'de>
 	for StructAccess<'a, 'de, Position, Reporter>
 {
 	type Error = Error;
@@ -90,12 +90,32 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::MapAc
 				Either::Left(value) => seed
 					.deserialize(&mut Deserializer(value, self.reporter))
 					.report_at(self.reporter, value.span.clone()),
-				Either::Right(key) => todo!(),
+				Either::Right(key) => seed
+					.deserialize(MissingFieldDeserializer(key, self.span.clone()))
+					.report_at(self.reporter, self.span.clone()),
 			})
 	}
 
 	fn size_hint(&self) -> Option<usize> {
 		let size = self.entries.size_hint();
 		size.1.filter(|l| *l == size.0)
+	}
+}
+
+struct MissingFieldDeserializer<'a, Position: Clone>(&'a str, Range<Position>);
+impl<'a, 'de, Position: Clone> de::Deserializer<'de> for MissingFieldDeserializer<'a, Position> {
+	type Error = Error;
+
+	fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+	where
+		V: de::Visitor<'de>,
+	{
+		visitor.visit_none()
+	}
+
+	forward_to_deserialize_any! {
+		bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+		bytes byte_buf option unit unit_struct newtype_struct seq tuple
+		tuple_struct map struct enum identifier ignored_any
 	}
 }
