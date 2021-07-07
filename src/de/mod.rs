@@ -326,6 +326,47 @@ macro_rules! parsed {
 	)*};
 }
 
+macro_rules! parsed_float {
+	($Variant:ident => $($Type:ident),*$(,)?) => {$(
+		paste! {
+			fn [<deserialize_ $Type>]<V>(self, visitor: V) -> Result<V::Value>
+			where
+				V: de::Visitor<'de>,
+			{
+				match &self.0.value {
+					TamlValue::Integer(i) => {
+						let span = self.0.span.clone().pipe(Some);
+						self.1.report_with(|| Diagnostic {
+							r#type: DiagnosticType::InvalidType,
+							labels: vec![
+								DiagnosticLabel {
+									caption: concat!("Expected ", stringify!($Type), ".").pipe(Cow::Borrowed).into(),
+									span: span.clone(),
+									priority: DiagnosticLabelPriority::Primary,
+								},
+								DiagnosticLabel {
+									caption: format!("Hint: Try `{}.0`.", i).pipe(Cow::Owned::<str>).into(),
+									span,
+									priority: DiagnosticLabelPriority::Auxiliary,
+								},
+							],
+						});
+						Err(ErrorKind::Reported.into())
+					}
+					TamlValue::$Variant(v) => visitor
+						.[<visit_ $Type>](
+							v.parse()
+								.map_err(|_| Error::invalid_value(concat!("Expected ", stringify!($Type), ".")))
+								.report_for(self)?,
+						)
+						.report_for(self),
+					_ => self.report_invalid_type(concat!("Expected ", stringify!($Type), ".")),
+				}
+			}
+		}
+	)*};
+}
+
 #[allow(clippy::non_ascii_literal)]
 impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserializer<'de>
 	for &mut Deserializer<'a, 'de, Position, Reporter>
@@ -365,7 +406,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 
 	parsed!(Integer => i8, i16, i32, i64, i128);
 	parsed!(Integer => u8, u16, u32, u64, u128);
-	parsed!(Float => f32, f64);
+	parsed_float!(Float => f32, f64);
 
 	fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
 	where

@@ -115,14 +115,10 @@ fn expected_other_fields() {
 
 #[derive(Debug, PartialEq, Deserialize)]
 struct TypedFields {
-	#[serde(default)]
 	i8: Option<i8>,
-
-	#[serde(default)]
 	string: Option<String>,
-
-	#[serde(default)]
 	f32: Option<f32>,
+	f64: Option<f64>,
 }
 
 #[test]
@@ -177,6 +173,42 @@ fn expect_f32() {
 				5..20,
 				DiagnosticLabelPriority::Primary,
 			)]
+		}]
+	);
+	report(text, diagnostics)
+}
+
+#[test]
+fn decimal_hint_1() {
+	let text = "f32: 1\n";
+	let mut diagnostics = vec![];
+	from_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	assert_eq!(
+		diagnostics.as_slice(),
+		&[tamlDiagnostic {
+			r#type: DiagnosticType::InvalidType,
+			labels: vec![
+				DiagnosticLabel::new("Expected f32.", 5..6, DiagnosticLabelPriority::Primary,),
+				DiagnosticLabel::new("Hint: Try `1.0`.", 5..6, DiagnosticLabelPriority::Auxiliary,)
+			]
+		}]
+	);
+	report(text, diagnostics)
+}
+
+#[test]
+fn decimal_hint_2() {
+	let text = "f64: 2\n";
+	let mut diagnostics = vec![];
+	from_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	assert_eq!(
+		diagnostics.as_slice(),
+		&[tamlDiagnostic {
+			r#type: DiagnosticType::InvalidType,
+			labels: vec![
+				DiagnosticLabel::new("Expected f64.", 5..6, DiagnosticLabelPriority::Primary,),
+				DiagnosticLabel::new("Hint: Try `2.0`.", 5..6, DiagnosticLabelPriority::Auxiliary,)
+			]
 		}]
 	);
 	report(text, diagnostics)
