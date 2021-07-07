@@ -16,7 +16,7 @@ use taml::{
 	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
 	Token,
 };
-use tap::Pipe;
+use tap::{Conv, Pipe};
 
 mod key_deserializer;
 mod list_access;
@@ -482,7 +482,12 @@ impl<'a, 'de, Position: Clone + Ord, Reporter: diagReporter<Position>> de::Deser
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::EnumVariant { key, payload } => {
+				todo!()
+			}
+			_ => self.report_invalid_value("Expected enum."),
+		}
 	}
 
 	fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
