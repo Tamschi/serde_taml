@@ -1,6 +1,3 @@
-//TODO: Add secondary labels without caption: (), span: (), priority: ()  caption while unrolling due to error. Disarm/return `Ok(())` with  `.void()` on that guard.
-//TODO: Extract this functionality into a separate serde_taml crate.
-
 use paste::paste;
 use serde::de;
 use std::{
