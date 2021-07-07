@@ -1,9 +1,10 @@
+use cast::u64;
 use codemap::CodeMap;
-use codemap_diagnostic::{ColorConfig, Diagnostic, Emitter, SpanLabel, SpanStyle};
+use codemap_diagnostic::{ColorConfig, Diagnostic, Emitter, Level, SpanLabel, SpanStyle};
 use serde::Deserialize;
 use serde_taml::de::from_str;
-use std::{borrow::Cow, convert::TryInto};
-use taml::diagnostics::DiagnosticLabelPriority;
+use std::borrow::Cow;
+use taml::diagnostics::{DiagnosticLabelPriority, DiagnosticLevel};
 use tap::TapFallible;
 
 //TODO: Split up this test.
@@ -117,29 +118,24 @@ fn deserializer() {
 					reporter
 						.into_iter()
 						.map(|diagnostic| Diagnostic {
-							level: codemap_diagnostic::Level::Bug,
+							level: match diagnostic.level() {
+								DiagnosticLevel::Warning => Level::Warning,
+								DiagnosticLevel::Error => Level::Error,
+							},
 							message: "This shouldn't happen.".to_string(),
-							code: None,
+							code: Some(diagnostic.code()),
 							spans: diagnostic
 								.labels
 								.into_iter()
 								.map(|label| SpanLabel {
-									span: input_span.subspan(
-										label
-											.span
-											.as_ref()
-											.map(|r| r.start)
-											.unwrap_or_default()
-											.try_into()
-											.unwrap(),
-										label
-											.span
-											.as_ref()
-											.map(|r| r.end)
-											.unwrap_or_default()
-											.try_into()
-											.unwrap(),
-									),
+									span: match label.span {
+										Some(span) => {
+											input_span.subspan(u64(span.start), u64(span.end))
+										}
+										None => {
+											input_span.subspan(input_span.len(), input_span.len())
+										}
+									},
 									label: label.caption.map(Cow::into_owned),
 									style: match label.priority {
 										DiagnosticLabelPriority::Primary => SpanStyle::Primary,
