@@ -323,7 +323,7 @@ fn missing_fields() {
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::MissingField,
 			labels: vec![DiagnosticLabel::new(
-				"Missing field missing_field.",
+				"Missing field `missing_field`.",
 				0..0,
 				DiagnosticLabelPriority::Primary,
 			)]

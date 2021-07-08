@@ -198,6 +198,43 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'
 					.report_at(self.reporter, value.span.clone()),
 				Either::Right(key) => seed
 					.deserialize(MissingFieldDeserializer(key, self.span.clone()))
+					.map_err({
+						let span = self.span.clone();
+						|err| {
+							match err.kind {
+								ErrorKind::SerdeCustom { msg } => todo!(),
+								ErrorKind::SerdeInvalidType { .. } => {
+									self.reporter.report_with(|| Diagnostic {
+										r#type: DiagnosticType::MissingField,
+										labels: vec![DiagnosticLabel {
+											caption: Some(
+												format!(
+													"Missing field `{}`.",
+													key.replace('`', "\\`")
+												)
+												.pipe(Cow::Owned),
+											),
+											span: span.into(),
+											priority: DiagnosticLabelPriority::Primary,
+										}],
+									});
+									ErrorKind::Reported
+								}
+								ErrorKind::SerdeInvalidValue {
+									unexpected,
+									expected,
+								} => todo!(),
+								ErrorKind::SerdeInvalidLength { len, expected } => todo!(),
+								ErrorKind::SerdeUnknownVariant { variant, expected } => todo!(),
+								ErrorKind::SerdeUnknownField { field, expected } => todo!(),
+								ErrorKind::SerdeMissingField { field } => todo!(),
+								ErrorKind::SerdeDuplicateField { field } => todo!(),
+								ErrorKind::InvalidValue { msg } => todo!(),
+								ErrorKind::Reported => ErrorKind::Reported,
+							}
+							.into()
+						}
+					})
 					.report_at(self.reporter, self.span.clone()),
 			})
 	}
