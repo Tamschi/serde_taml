@@ -106,14 +106,18 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> Deserializer<'d
 	where
 		V: serde::de::Visitor<'de>,
 	{
-		todo!()
+		visitor
+			.visit_str(self.key.name.as_ref())
+			.report_at(self.reporter, self.key.span)
 	}
 
 	fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
 	where
 		V: serde::de::Visitor<'de>,
 	{
-		todo!()
+		visitor
+			.visit_str(self.key.name.as_ref())
+			.report_at(self.reporter, self.key.span)
 	}
 
 	fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, ops::Range};
 
-use crate::de::{list_access::ListAccess, struct_access::StructAccess, ErrorKind};
+use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
 
 use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportFor};
 use debugless_unwrap::DebuglessUnwrap;
@@ -10,7 +10,7 @@ use taml::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
 		Reporter as diagReporter,
 	},
-	parsing::{Taml, TamlValue, VariantPayload},
+	parsing::{TamlValue, VariantPayload},
 };
 use tap::Pipe;
 use try_match::try_match;
@@ -104,11 +104,11 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 			.debugless_unwrap();
 		match variant.payload {
 			VariantPayload::Structured(map) => visitor
-				.visit_map(StructAccess::new(
+				.visit_map(StructOrMapAccess::new(
 					self.0 .1,
 					self.0 .0.span.clone(),
 					map,
-					fields,
+					fields.into(),
 				))
 				.report_for(self.0),
 			_ => self

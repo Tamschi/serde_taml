@@ -19,7 +19,7 @@ use tap::{Conv, Pipe};
 mod enum_access;
 mod key_deserializer;
 mod list_access;
-mod struct_access;
+mod struct_or_map_access;
 
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
 	pub &'a Taml<'de, Position>,
@@ -525,11 +525,11 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	{
 		match &self.0.value {
 			TamlValue::Map(m) => visitor
-				.visit_map(struct_access::StructAccess::new(
+				.visit_map(struct_or_map_access::StructOrMapAccess::new(
 					self.1,
 					self.0.span.clone(),
 					m,
-					&[],
+					None,
 				))
 				.report_for(self),
 			_ => self.report_invalid_type("Expected map."),
@@ -547,11 +547,11 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	{
 		match &self.0.value {
 			TamlValue::Map(m) => visitor
-				.visit_map(struct_access::StructAccess::new(
+				.visit_map(struct_or_map_access::StructOrMapAccess::new(
 					self.1,
 					self.0.span.clone(),
 					m,
-					fields,
+					fields.into(),
 				))
 				.report_for(self),
 			_ => self.report_invalid_type("Expected struct."),
