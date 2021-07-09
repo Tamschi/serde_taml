@@ -2,7 +2,7 @@ use cast::u64;
 use codemap::CodeMap;
 use codemap_diagnostic::{ColorConfig, Diagnostic, Emitter, Level, SpanLabel, SpanStyle};
 use serde::Deserialize;
-use serde_taml::de::from_str;
+use serde_taml::de::from_taml_str;
 use std::borrow::Cow;
 use taml::diagnostics::{DiagnosticLabelPriority, DiagnosticLevel};
 use tap::TapFallible;
@@ -109,7 +109,7 @@ fn deserializer() {
 	";
 
 	assert_eq!(
-		dbg!(from_str::<Deserializable, _>(input, &mut reporter))
+		dbg!(from_taml_str::<Deserializable, _>(input, &mut reporter))
 			.tap_err(|_| {
 				let mut codemap = CodeMap::new();
 				let input_span = codemap.add_file("".to_string(), input.to_string()).span;

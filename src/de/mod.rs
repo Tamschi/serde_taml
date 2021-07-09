@@ -176,24 +176,23 @@ impl de::Error for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[allow(clippy::missing_errors_doc)]
-pub fn from_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>>(
+pub fn from_taml_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>>(
 	str: &'de str,
 	reporter: &mut Reporter,
 ) -> Result<T> {
 	use logos::Logos as _;
 	let lexer = Token::lexer(str).spanned();
-	from_tokens(lexer, reporter)
+	from_taml_tokens(lexer, reporter)
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub fn from_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
+pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
 	tokens: impl IntoIterator<Item = impl IntoToken<'de, Position>>,
 	reporter: &mut impl diagReporter<Position>,
 ) -> Result<T> {
-	//TODO: This seems overly explicit.
 	let root = parse(tokens, reporter).map_err(|()| ErrorKind::Reported.conv::<Error>())?;
 
-	from_taml(
+	from_taml_tree(
 		&Taml {
 			value: TamlValue::Map(root),
 			span: Position::default()..Position::default(),
@@ -203,7 +202,7 @@ pub fn from_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
 }
 
 #[allow(clippy::missing_errors_doc)]
-pub fn from_taml<'de, T: de::Deserialize<'de>, Position: Clone>(
+pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: Clone>(
 	taml: &Taml<'de, Position>,
 	reporter: &mut impl diagReporter<Position>,
 ) -> Result<T> {
