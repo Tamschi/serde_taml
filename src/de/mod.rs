@@ -21,6 +21,7 @@ mod key_deserializer;
 mod list_access;
 mod struct_or_map_access;
 
+/// A TAML [Serde](`serde`)-[`Deserializer`](`serde::Deserializer`) implementation.
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
 	pub &'a Taml<'de, Position>,
 	pub &'a mut Reporter,
@@ -33,6 +34,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	}
 }
 
+/// An *unspecific* deserialization error.  
+/// To get more precise information, refer to the optional (unversioned!) [human-readable diagnostics](`taml::diagnostics`).
 #[derive(Debug)]
 pub struct Error {
 	kind: ErrorKind,
@@ -173,19 +176,32 @@ impl de::Error for Error {
 	}
 }
 
+/// Shorthand for <code>[std]::[result](std::result)::[Result](std::result::Result)&lt;T, [Error]></code>.
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[allow(clippy::missing_errors_doc)]
+/// [Deserialize](`de::Deserialize`)s `T` from a TAML-formatted string slice.
+///
+/// Human-readable diagnostics are [optionally reported](`taml::diagnostics`) while [`Error`]s are unspecific.
+///
+/// # Errors
+///
+/// Iff `taml_str` is not a valid TAML document or does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
 pub fn from_taml_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>>(
-	str: &'de str,
+	taml_str: &'de str,
 	reporter: &mut Reporter,
 ) -> Result<T> {
 	use logos::Logos as _;
-	let lexer = Token::lexer(str).spanned();
+	let lexer = Token::lexer(taml_str).spanned();
 	from_taml_tokens(lexer, reporter)
 }
 
-#[allow(clippy::missing_errors_doc)]
+/// [Deserialize](`de::Deserialize`)s `T` from a previously-tokenised TAML document.
+///
+/// Human-readable diagnostics are [optionally reported](`taml::diagnostics`) while [`Error`]s are unspecific.
+///
+/// # Errors
+///
+/// Iff `tokens` can't be parsed into a valid TAML document or does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
 pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
 	tokens: impl IntoIterator<Item = impl IntoToken<'de, Position>>,
 	reporter: &mut impl diagReporter<Position>,
@@ -201,7 +217,13 @@ pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>
 	)
 }
 
-#[allow(clippy::missing_errors_doc)]
+/// [Deserialize](`de::Deserialize`)s `T` from a pre-parsed TAML document.
+///
+/// Human-readable diagnostics are [optionally reported](`taml::diagnostics`) while [`Error`]s are unspecific.
+///
+/// # Errors
+///
+/// Iff `taml` does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
 pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: Clone>(
 	taml: &Taml<'de, Position>,
 	reporter: &mut impl diagReporter<Position>,
