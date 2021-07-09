@@ -35,7 +35,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::SeqAccess<'
 {
 	type Error = Error;
 
-	fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
+	fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Error>
 	where
 		T: de::DeserializeSeed<'de>,
 	{

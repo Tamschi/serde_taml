@@ -1,10 +1,8 @@
-use std::{borrow::Cow, ops::Range};
-
-use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
-
 use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportFor};
+use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
 use debugless_unwrap::DebuglessUnwrap;
 use serde::de;
+use std::{borrow::Cow, ops::Range};
 use taml::{
 	diagnostics::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
@@ -25,7 +23,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::EnumAcc
 
 	type Variant = Self;
 
-	fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+	fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Error>
 	where
 		V: de::DeserializeSeed<'de>,
 	{
@@ -44,7 +42,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 {
 	type Error = Error;
 
-	fn unit_variant(self) -> Result<(), Self::Error> {
+	fn unit_variant(self) -> Result<(), Error> {
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
 			.debugless_unwrap();
 		match variant.payload {
@@ -55,7 +53,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 		}
 	}
 
-	fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+	fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Error>
 	where
 		T: de::DeserializeSeed<'de>,
 	{
@@ -76,7 +74,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 		.report_for(self.0)
 	}
 
-	fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
+	fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Error>
 	where
 		V: de::Visitor<'de>,
 	{
@@ -96,7 +94,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 		self,
 		fields: &'static [&'static str],
 		visitor: V,
-	) -> Result<V::Value, Self::Error>
+	) -> Result<V::Value, Error>
 	where
 		V: de::Visitor<'de>,
 	{
