@@ -1,4 +1,4 @@
-use super::{Deserializer, Error, ReportAt};
+use super::{Deserializer, Error, ReportAt, Result};
 use serde::de;
 use std::ops::Range;
 use taml::{
@@ -35,7 +35,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::SeqAccess<'
 {
 	type Error = Error;
 
-	fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Error>
+	fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
 	where
 		T: de::DeserializeSeed<'de>,
 	{

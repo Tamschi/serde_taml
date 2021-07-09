@@ -1,4 +1,4 @@
-use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ErrorKind, ReportAt};
+use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ErrorKind, ReportAt, Result};
 use either::Either;
 use serde::{de, forward_to_deserialize_any};
 use std::{borrow::Cow, iter, ops::Range};
@@ -164,7 +164,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'
 {
 	type Error = Error;
 
-	fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Error>
+	fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
 	where
 		K: de::DeserializeSeed<'de>,
 	{
@@ -185,7 +185,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'
 			.report_at(self.reporter, self.span.clone())
 	}
 
-	fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Error>
+	fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
 	where
 		V: de::DeserializeSeed<'de>,
 	{
@@ -249,7 +249,7 @@ struct MissingFieldDeserializer<'a, Position: Clone>(&'a str, Range<Position>);
 impl<'a, 'de, Position: Clone> de::Deserializer<'de> for MissingFieldDeserializer<'a, Position> {
 	type Error = Error;
 
-	fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Error>
+	fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{

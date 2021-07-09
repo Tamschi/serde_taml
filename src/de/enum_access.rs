@@ -1,4 +1,4 @@
-use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportFor};
+use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportFor, Result};
 use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
 use debugless_unwrap::DebuglessUnwrap;
 use serde::de;
@@ -23,7 +23,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::EnumAcc
 
 	type Variant = Self;
 
-	fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Error>
+	fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
 	where
 		V: de::DeserializeSeed<'de>,
 	{
@@ -42,7 +42,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 {
 	type Error = Error;
 
-	fn unit_variant(self) -> Result<(), Error> {
+	fn unit_variant(self) -> Result<()> {
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
 			.debugless_unwrap();
 		match variant.payload {
@@ -53,7 +53,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 		}
 	}
 
-	fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Error>
+	fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
 	where
 		T: de::DeserializeSeed<'de>,
 	{
@@ -74,7 +74,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 		.report_for(self.0)
 	}
 
-	fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Error>
+	fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
@@ -90,11 +90,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 		}
 	}
 
-	fn struct_variant<V>(
-		self,
-		fields: &'static [&'static str],
-		visitor: V,
-	) -> Result<V::Value, Error>
+	fn struct_variant<V>(self, fields: &'static [&'static str], visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
@@ -121,7 +117,7 @@ trait ReportUnexpectedVariant<Position: Clone> {
 		self,
 		msg: &'static str,
 		key_span: Range<Position>,
-	) -> Result<V, Error>;
+	) -> Result<V>;
 }
 impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportUnexpectedVariant<Position>
 	for &mut Deserializer<'a, 'de, Position, Reporter>
@@ -130,7 +126,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportUnexpecte
 		self,
 		msg: &'static str,
 		key_span: Range<Position>,
-	) -> Result<V, Error> {
+	) -> Result<V> {
 		let enum_span = self.0.span.clone();
 		self.1.report_with(|| Diagnostic {
 			r#type: DiagnosticType::CustomErrorFromVisitor,
