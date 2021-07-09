@@ -7,4 +7,7 @@ pub mod readme {
 	doc_comment::doctest!("../README.md");
 }
 
+/// [Serde](`serde`)-compatible TAML deserialisation facilities.
 pub mod de;
+
+pub use taml;
