@@ -1,10 +1,7 @@
 use super::{Deserializer, Error, ReportAt, Result};
 use serde::de;
 use std::ops::Range;
-use taml::{
-	diagnostics::Reporter as diagReporter,
-	parsing::{List, Taml},
-};
+use taml::{diagnostics::Reporter as diagReporter, parsing::Taml};
 use tap::Pipe;
 
 #[allow(clippy::type_complexity)]
@@ -16,11 +13,10 @@ pub struct ListAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Position>
 impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	ListAccess<'a, 'de, Position, Reporter>
 {
-	#[allow(clippy::ptr_arg)]
 	pub fn new(
 		reporter: &'a mut Reporter,
 		span: Range<Position>,
-		list: &'a List<'de, Position>,
+		list: &'a [Taml<'de, Position>],
 	) -> Self {
 		Self {
 			reporter,
