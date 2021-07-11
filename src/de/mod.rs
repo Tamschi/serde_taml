@@ -1,9 +1,8 @@
-use self::enum_access::EnumAndVariantAccess;
 use paste::paste;
 use serde::de;
 use std::{
 	borrow::Cow,
-	fmt::{self, Debug, Formatter},
+	fmt::{self, Debug, Display, Formatter},
 	ops::Range,
 };
 use taml::{
@@ -20,6 +19,10 @@ mod enum_access;
 mod key_deserializer;
 mod list_access;
 mod struct_or_map_access;
+
+use enum_access::EnumAndVariantAccess;
+use list_access::ListAccess;
+use struct_or_map_access::StructOrMapAccess;
 
 /// A TAML [Serde](`serde`)-[`Deserializer`](`serde::Deserializer`) implementation.
 pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
@@ -45,10 +48,7 @@ impl Error {
 		ErrorKind::InvalidValue { msg }.into()
 	}
 	fn is_reported(&self) -> bool {
-		match self.kind {
-			ErrorKind::Reported => true,
-			_ => false,
-		}
+		matches!(self.kind, ErrorKind::Reported)
 	}
 }
 impl fmt::Display for Error {
@@ -294,6 +294,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>, V>
 trait ReportInvalid {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V>;
 	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V>;
+	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V>;
 }
 impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
 	for &mut Deserializer<'a, 'de, Position, Reporter>
@@ -317,6 +318,19 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
 			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel {
 				caption: msg.pipe(Cow::Borrowed).into(),
+				span,
+				priority: DiagnosticLabelPriority::Primary,
+			}],
+		});
+		Err(ErrorKind::Reported.into())
+	}
+
+	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V> {
+		let span = self.0.span.clone().into();
+		self.1.report_with(move || Diagnostic {
+			r#type: DiagnosticType::InvalidType,
+			labels: vec![DiagnosticLabel {
+				caption: msg.to_string().pipe(Cow::Owned::<str>).into(),
 				span,
 				priority: DiagnosticLabelPriority::Primary,
 			}],
@@ -399,13 +413,20 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 		V: de::Visitor<'de>,
 	{
 		match &self.0.value {
-			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
+			TamlValue::String(s) => visitor.visit_str(s),
 			TamlValue::Integer(i) => todo!(),
 			TamlValue::Float(f) => todo!(),
-			TamlValue::List(l) => todo!(),
-			TamlValue::Map(m) => todo!(),
-			TamlValue::EnumVariant { key, payload } => todo!(),
+			TamlValue::List(l) => {
+				visitor.visit_seq(ListAccess::new(self.1, self.0.span.clone(), l))
+			}
+			TamlValue::Map(m) => {
+				visitor.visit_map(StructOrMapAccess::new(self.1, self.0.span.clone(), m, None))
+			}
+			TamlValue::EnumVariant { .. } => {
+				visitor.visit_enum(EnumAndVariantAccess(&mut self.by_ref()))
+			}
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -490,14 +511,14 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		panic!("Unit types are not currently supported by `serde_taml`.")
+		self.deserialize_tuple(0, visitor)
 	}
 
-	fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
+	fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		self.deserialize_unit(visitor)
+		self.deserialize_struct(name, &[], visitor)
 	}
 
 	fn deserialize_newtype_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
@@ -515,7 +536,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	{
 		match &self.0.value {
 			TamlValue::List(l) => visitor
-				.visit_seq(list_access::ListAccess::new(self.1, self.0.span.clone(), l))
+				.visit_seq(ListAccess::new(self.1, self.0.span.clone(), l))
 				.report_for(self),
 			_ => self.report_invalid_type("Expected list (`(…)`)."),
 		}
@@ -525,19 +546,29 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::List(l) if l.len() == len => visitor
+				.visit_seq(list_access::ListAccess::new(self.1, self.0.span.clone(), l))
+				.report_for(self),
+			TamlValue::List(l) => self.report_invalid_type_owned(format_args!(
+				"Expected {}-tuple, but found a list with {} elements.",
+				len,
+				l.len(),
+			)),
+			_ => self.report_invalid_type_owned(format_args!("Expected {}-tuple (`(…)`).", len)),
+		}
 	}
 
 	fn deserialize_tuple_struct<V>(
 		self,
-		name: &'static str,
+		_name: &'static str,
 		len: usize,
 		visitor: V,
 	) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		self.deserialize_tuple(len, visitor)
 	}
 
 	fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
@@ -546,12 +577,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	{
 		match &self.0.value {
 			TamlValue::Map(m) => visitor
-				.visit_map(struct_or_map_access::StructOrMapAccess::new(
-					self.1,
-					self.0.span.clone(),
-					m,
-					None,
-				))
+				.visit_map(StructOrMapAccess::new(self.1, self.0.span.clone(), m, None))
 				.report_for(self),
 			_ => self.report_invalid_type("Expected map."),
 		}
@@ -568,7 +594,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	{
 		match &self.0.value {
 			TamlValue::Map(m) => visitor
-				.visit_map(struct_or_map_access::StructOrMapAccess::new(
+				.visit_map(StructOrMapAccess::new(
 					self.1,
 					self.0.span.clone(),
 					m,
@@ -581,8 +607,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 
 	fn deserialize_enum<V>(
 		self,
-		name: &'static str,
-		variants: &'static [&'static str],
+		_name: &'static str,
+		_variants: &'static [&'static str],
 		visitor: V,
 	) -> Result<V::Value>
 	where
@@ -600,7 +626,13 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.0.value {
+			TamlValue::EnumVariant {
+				key,
+				payload: VariantPayload::Unit,
+			} => visitor.visit_str(key.name.as_ref()).report_for(self),
+			_ => self.report_invalid_type("Expected identifier."),
+		}
 	}
 
 	fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
