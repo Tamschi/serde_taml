@@ -322,11 +322,18 @@ fn missing_fields() {
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::MissingField,
-			labels: vec![DiagnosticLabel::new(
-				"Missing field `missing_field`.",
-				0..0,
-				DiagnosticLabelPriority::Primary,
-			)]
+			labels: vec![
+				DiagnosticLabel::new(
+					"Missing field `missing_field`.",
+					0..0,
+					DiagnosticLabelPriority::Primary,
+				),
+				DiagnosticLabel::new(
+					"Invalid type: Unexpected Option value, expected i8.",
+					None,
+					DiagnosticLabelPriority::Auxiliary,
+				)
+			]
 		}]
 	);
 	report(text, diagnostics);

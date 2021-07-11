@@ -1,5 +1,6 @@
 use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ErrorKind, ReportAt, Result};
 use either::Either;
+use joinery::JoinableIterator;
 use serde::{de, forward_to_deserialize_any};
 use std::{borrow::Cow, iter, ops::Range};
 use taml::{
@@ -201,38 +202,103 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'
 					.map_err({
 						let span = self.span.clone();
 						|err| {
-							match err.kind {
-								ErrorKind::SerdeCustom { msg } => todo!(),
-								ErrorKind::SerdeInvalidType { .. } => {
-									self.reporter.report_with(|| Diagnostic {
-										r#type: DiagnosticType::MissingField,
-										labels: vec![DiagnosticLabel {
-											caption: Some(
-												format!(
-													"Missing field `{}`.",
-													key.replace('`', "\\`")
-												)
-												.pipe(Cow::Owned),
-											),
+							if !matches!(err.kind, ErrorKind::Reported) {
+								self.reporter.report_with(|| Diagnostic {
+									r#type: DiagnosticType::MissingField,
+									labels: vec![
+										DiagnosticLabel {
+											caption: format!(
+												"Missing field `{}`.",
+												key.replace('`', "\\`")
+											)
+											.pipe(Cow::Owned::<str>)
+											.pipe(Some),
 											span: span.into(),
 											priority: DiagnosticLabelPriority::Primary,
-										}],
-									});
-									ErrorKind::Reported
-								}
-								ErrorKind::SerdeInvalidValue {
-									unexpected,
-									expected,
-								} => todo!(),
-								ErrorKind::SerdeInvalidLength { len, expected } => todo!(),
-								ErrorKind::SerdeUnknownVariant { variant, expected } => todo!(),
-								ErrorKind::SerdeUnknownField { field, expected } => todo!(),
-								ErrorKind::SerdeMissingField { field } => todo!(),
-								ErrorKind::SerdeDuplicateField { field } => todo!(),
-								ErrorKind::InvalidValue { msg } => todo!(),
-								ErrorKind::Reported => ErrorKind::Reported,
+										},
+										DiagnosticLabel {
+											caption: match err.kind {
+												ErrorKind::SerdeCustom { msg } => msg,
+												ErrorKind::SerdeInvalidType {
+													unexpected,
+													expected,
+												} => format!(
+													"Invalid type: Unexpected {}, expected {}.",
+													unexpected, expected
+												),
+												ErrorKind::SerdeInvalidValue {
+													unexpected,
+													expected,
+												} => format!(
+													"Invalid value: Unexpected {}, expected {}.",
+													unexpected, expected
+												),
+												ErrorKind::SerdeInvalidLength { len, expected } => {
+													format!(
+														"Invalid length {}, expected {}.",
+														len, expected
+													)
+												}
+												ErrorKind::SerdeUnknownVariant {
+													variant,
+													expected,
+												} => format!(
+													"Unknown variant `{}`, expected one of: {}.",
+													variant.replace('`', "\\`"),
+													if expected.is_empty() {
+														"(None)".to_string()
+													} else {
+														format!(
+															"`{}`",
+															expected
+																.iter()
+																.map(|x| x.replace('`', "\\`"))
+																.join_with("`, `")
+														)
+													}
+												),
+												ErrorKind::SerdeUnknownField {
+													field,
+													expected,
+												} => format!(
+													"Unknown field `{}`, expected one of: {}.",
+													field.replace('`', "\\`"),
+													if expected.is_empty() {
+														"(None)".to_string()
+													} else {
+														format!(
+															"`{}`",
+															expected
+																.iter()
+																.map(|x| x.replace('`', "\\`"))
+																.join_with("`, `")
+														)
+													}
+												),
+												ErrorKind::SerdeMissingField { field } => format!(
+													"Missing field `{}.`",
+													field.replace('`', "\\`")
+												),
+												ErrorKind::SerdeDuplicateField { field } => {
+													format!(
+														"Duplicate field `{}`.",
+														field.replace('`', "\\`")
+													)
+												}
+												ErrorKind::InvalidValue { msg } => {
+													format!("Invalid value: {}.", msg)
+												}
+												ErrorKind::Reported => unreachable!(),
+											}
+											.pipe(Cow::Owned::<str>)
+											.pipe(Some),
+											span: None,
+											priority: DiagnosticLabelPriority::Auxiliary,
+										},
+									],
+								});
 							}
-							.into()
+							ErrorKind::Reported.into()
 						}
 					})
 					.report_at(self.reporter, self.span.clone()),
