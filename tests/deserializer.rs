@@ -117,7 +117,7 @@ fn deserializer() {
 		dbg!(from_taml_str::<Deserializable, _>(
 			input,
 			&mut reporter,
-			&[("UTF-8", &|str| Ok(Cow::Borrowed(str)))]
+			&[("UTF-8", &|str| Ok(Cow::Borrowed(str)))],
 		))
 		.tap_err(|_| {
 			let mut codemap = CodeMap::new();
