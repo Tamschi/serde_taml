@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde_taml::de::from_taml_str;
 use std::borrow::Cow;
 use taml::diagnostics::{DiagnosticLabelPriority, DiagnosticLevel};
-use tap::{Pipe, TapFallible};
+use tap::TapFallible;
 
 //TODO: Split up this test.
 #[test]
