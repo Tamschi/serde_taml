@@ -107,7 +107,7 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 				.visit_map(StructOrMapAccess::new(
 					self.0.reporter,
 					self.0.data.span.clone(),
-					self.0.decoders,
+					self.0.encoders,
 					map,
 					fields.into(),
 				))
