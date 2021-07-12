@@ -1,5 +1,6 @@
 use super::{
-	key_deserializer::KeyDeserializer, Decoder, Deserializer, Error, ErrorKind, ReportAt, Result,
+	key_deserializer::KeyDeserializer, Decoder, Deserializer, Error, ErrorKind, PositionImpl,
+	ReportAt, Result,
 };
 use either::Either;
 use joinery::JoinableIterator;
@@ -17,7 +18,7 @@ use tap::Pipe;
 const EXTRA_FIELDS: &str = "taml::extra_fields";
 
 #[allow(clippy::type_complexity)]
-pub struct StructOrMapAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
+pub struct StructOrMapAccess<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
 	reporter: &'a mut Reporter,
 	span: Range<Position>,
 	decoders: &'a [(&'a str, &'a Decoder)],
@@ -33,7 +34,7 @@ pub struct StructOrMapAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Po
 	next_value: Option<Either<Cow<'a, Taml<'de, Position>>, &'static str>>,
 	fail_from_extra_fields: bool,
 }
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 	StructOrMapAccess<'a, 'de, Position, Reporter>
 {
 	pub fn new(
@@ -165,7 +166,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	}
 }
 
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'de>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::MapAccess<'de>
 	for StructOrMapAccess<'a, 'de, Position, Reporter>
 {
 	type Error = Error;
@@ -320,8 +321,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'
 	}
 }
 
-struct MissingFieldDeserializer<'a, Position: Clone>(&'a str, Range<Position>);
-impl<'a, 'de, Position: Clone> de::Deserializer<'de> for MissingFieldDeserializer<'a, Position> {
+struct MissingFieldDeserializer<'a, Position>(&'a str, Range<Position>);
+impl<'a, 'de, Position> de::Deserializer<'de> for MissingFieldDeserializer<'a, Position> {
 	type Error = Error;
 
 	fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>

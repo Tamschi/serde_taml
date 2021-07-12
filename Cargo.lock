@@ -480,6 +480,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_bytes"
+version = "0.11.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16ae07dd2f88a366f15bd0632ba725227018c69a1c8550a927324f8eb8368bb9"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -512,6 +521,7 @@ dependencies = [
  "paste",
  "serde",
  "serde-object",
+ "serde_bytes",
  "taml",
  "tap",
  "try_match",
@@ -547,9 +557,9 @@ dependencies = [
 
 [[package]]
 name = "taml"
-version = "0.0.6"
+version = "0.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4521a101ee485f913869f89c401c1e5ef166e8a7b4c7defceeb1fb32cc2ec5bd"
+checksum = "e8ce53e8e56329d6ee542c7eb20374e8cb6b99140529ab9c999896061ddde0c3"
 dependencies = [
  "cervine",
  "debugless-unwrap",

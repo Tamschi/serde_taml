@@ -1,8 +1,10 @@
+use joinery::JoinableIterator;
 use paste::paste;
 use serde::de;
 use std::{
 	borrow::Cow,
 	fmt::{self, Debug, Display, Formatter},
+	iter,
 	ops::Range,
 };
 use taml::{
@@ -11,7 +13,7 @@ use taml::{
 		Reporter as diagReporter,
 	},
 	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
-	Token,
+	Decoded, Token,
 };
 use tap::{Conv, Pipe};
 
@@ -25,15 +27,20 @@ use list_access::ListAccess;
 use struct_or_map_access::StructOrMapAccess;
 
 /// Used to decode *Decoded* values (`<…:…>`).
-pub type Decoder = dyn Fn(&str) -> Cow<str>;
+pub type Decoder = dyn Fn(&str) -> core::result::Result<Cow<str>, Vec<DecodingError>>;
+
+pub struct DecodingError {
+	pub decoded_span: Range<usize>,
+	pub message: Cow<'static, str>,
+}
 
 /// A TAML [Serde](`serde`)-[`Deserializer`](`serde::Deserializer`) implementation.
-pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
+pub struct Deserializer<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
 	pub data: &'a Taml<'de, Position>,
 	pub reporter: &'a mut Reporter,
 	pub decoders: &'a [(&'a str, &'a Decoder)],
 }
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 	Deserializer<'a, 'de, Position, Reporter>
 {
 	fn by_ref(&mut self) -> Deserializer<'_, 'de, Position, Reporter> {
@@ -210,7 +217,7 @@ pub fn from_taml_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>
 /// # Errors
 ///
 /// Iff `tokens` can't be parsed into a valid TAML document or does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
-pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
+pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
 	tokens: impl IntoIterator<Item = impl IntoToken<'de, Position>>,
 	reporter: &mut impl diagReporter<Position>,
 	decoders: &[(&str, &Decoder)],
@@ -234,7 +241,7 @@ pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>
 /// # Errors
 ///
 /// Iff `taml` does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
-pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: Clone>(
+pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
 	taml: &Taml<'de, Position>,
 	reporter: &mut impl diagReporter<Position>,
 	decoders: &[(&str, &Decoder)],
@@ -246,10 +253,10 @@ pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: Clone>(
 	})
 }
 
-trait ReportFor<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
+trait ReportFor<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
 	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self;
 }
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>, V>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 	ReportFor<'a, 'de, Position, Reporter> for Result<V>
 {
 	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self {
@@ -280,10 +287,10 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>, V>
 	}
 }
 
-trait ReportAt<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
+trait ReportAt<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
 	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self;
 }
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>, V>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 	ReportAt<'a, 'de, Position, Reporter> for Result<V>
 {
 	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self {
@@ -311,7 +318,7 @@ trait ReportInvalid {
 	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V>;
 	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V>;
 }
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportInvalid
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
@@ -418,7 +425,7 @@ macro_rules! parsed_float {
 }
 
 #[allow(clippy::non_ascii_literal)]
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserializer<'de>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Deserializer<'de>
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	type Error = Error;
@@ -429,8 +436,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	{
 		match &self.data.value {
 			TamlValue::String(s) => visitor.visit_str(s),
-			TamlValue::Decoded { encoding, decoded } => {
-				visitor.visit_decoded(encoding.as_ref(), decoded.as_ref(), self.decoders)
+			TamlValue::Decoded(decoded) => {
+				visitor.visit_decoded(decoded, self.decoders, self.reporter)
 			}
 			TamlValue::Integer(i) => todo!(),
 			TamlValue::Float(f) => todo!(),
@@ -510,8 +517,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 		V: de::Visitor<'de>,
 	{
 		match &self.data.value {
-			TamlValue::Decoded { encoding, decoded } => visitor
-				.visit_decoded(encoding, decoded, self.decoders)
+			TamlValue::Decoded(decoded) => visitor
+				.visit_decoded(decoded, self.decoders, self.reporter)
 				.report_for(self),
 			_ => self.report_invalid_type("Expected decoded string (`<…:…>`)."),
 		}
@@ -681,11 +688,11 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 
 trait VisitDecoded<'de> {
 	type Value;
-	fn visit_decoded(
+	fn visit_decoded<Position: PositionImpl>(
 		self,
-		encoding: &str,
-		decoded: &str,
+		decoded: &Decoded<Position>,
 		decoders: &[(&str, &Decoder)],
+		reporter: &mut impl diagReporter<Position>,
 	) -> Result<Self::Value>;
 }
 impl<'de, V> VisitDecoded<'de> for V
@@ -694,12 +701,109 @@ where
 {
 	type Value = V::Value;
 
-	fn visit_decoded(
+	fn visit_decoded<Position: PositionImpl>(
 		self,
-		encoding: &str,
-		decoded: &str,
+		decoded: &Decoded<Position>,
 		decoders: &[(&str, &Decoder)],
+		reporter: &mut impl diagReporter<Position>,
 	) -> Result<Self::Value> {
-		todo!()
+		#![allow(clippy::map_unwrap_or)] // Needed to borrow `reporter`.
+		decoders
+			.iter()
+			.find_map(|(encoding, decoder)| {
+				(*encoding == decoded.encoding.as_ref()).then(|| *decoder)
+			})
+			.map(|decoder| match decoder(decoded.decoded.as_ref()) {
+				Ok(Cow::Borrowed(str)) => self.visit_str(str),
+				Ok(Cow::Owned(string)) => self.visit_string(string),
+				Err(errors) => {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::InvalidValue,
+						labels: errors
+							.into_iter()
+							.map(
+								|DecodingError {
+								     decoded_span,
+								     message,
+								 }| DiagnosticLabel {
+									caption: message.into(),
+									span: {
+										let escape_shift = decoded.decoded[..decoded_span.start]
+											.chars()
+											.filter(|c| *c == '>')
+											.count();
+										let start = decoded_span.start + escape_shift;
+										let end = decoded_span.end
+											+ escape_shift + decoded.decoded[decoded_span]
+											.chars()
+											.filter(|c| *c == '>')
+											.count();
+										decoded.decoded_span.start.offset_range(start..end)
+									},
+									priority: DiagnosticLabelPriority::Primary,
+								},
+							)
+							.chain(iter::once(DiagnosticLabel {
+								caption: Cow::Borrowed("Encoding specified here.").into(),
+								span: decoded.encoding_span.clone().into(),
+								priority: DiagnosticLabelPriority::Auxiliary,
+							}))
+							.collect(),
+					});
+					Err(ErrorKind::Reported.into())
+				}
+			})
+			.unwrap_or_else(|| {
+				reporter.report_with(|| Diagnostic {
+					r#type: DiagnosticType::CustomErrorFromVisitor,
+					labels: vec![
+						DiagnosticLabel {
+							caption: Cow::Owned::<str>(format!(
+								"Unrecognized encoding `{}`.",
+								decoded.encoding.replace('`', "\\`")
+							))
+							.into(),
+							span: decoded.encoding_span.clone().into(),
+							priority: DiagnosticLabelPriority::Primary,
+						},
+						DiagnosticLabel {
+							caption: Cow::Owned::<str>(format!(
+								"Hint: Available encodings are: {}.",
+								if decoders.is_empty() {
+									"(None)".to_string()
+								} else {
+									format!(
+										"`{}`",
+										decoders
+											.iter()
+											.map(|(encoding, _)| encoding.replace('`', "\\`"))
+											.join_with("`, `")
+									)
+								}
+							))
+							.into(),
+							span: decoded.encoding_span.clone().into(),
+							priority: DiagnosticLabelPriority::Auxiliary,
+						},
+					],
+				});
+				Err(ErrorKind::Reported.into())
+			})
+	}
+}
+
+pub trait PositionImpl: Debug + Clone + Default + PartialEq {
+	fn offset_range(&self, local_range: Range<usize>) -> Option<Range<Self>>;
+}
+
+impl PositionImpl for usize {
+	fn offset_range(&self, local_range: Range<usize>) -> Option<Range<Self>> {
+		Some(self + local_range.start..self + local_range.end)
+	}
+}
+
+impl PositionImpl for () {
+	fn offset_range(&self, _local_range: Range<usize>) -> Option<Range<Self>> {
+		None
 	}
 }

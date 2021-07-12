@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde_taml::de::from_taml_str;
 use std::borrow::Cow;
 use taml::diagnostics::{DiagnosticLabelPriority, DiagnosticLevel};
-use tap::TapFallible;
+use tap::{Pipe, TapFallible};
 
 //TODO: Split up this test.
 #[test]
@@ -39,6 +39,9 @@ fn deserializer() {
 
 		r#false: bool,
 		r#true: bool,
+
+		#[serde(with = "serde_bytes")]
+		decoded: Vec<u8>,
 	}
 
 	#[derive(Debug, Deserialize, PartialEq)]
@@ -106,13 +109,15 @@ fn deserializer() {
 
 		false: false
 		true: true
+
+		decoded: <UTF-8:Hello!>
 	";
 
 	assert_eq!(
 		dbg!(from_taml_str::<Deserializable, _>(
 			input,
 			&mut reporter,
-			&[]
+			&[("UTF-8", &|str| Ok(Cow::Borrowed(str)))]
 		))
 		.tap_err(|_| {
 			let mut codemap = CodeMap::new();
@@ -199,6 +204,8 @@ fn deserializer() {
 
 			r#false: false,
 			r#true: true,
+
+			decoded: "Hello!".into()
 		}
 	);
 }

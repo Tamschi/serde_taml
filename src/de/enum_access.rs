@@ -1,4 +1,6 @@
-use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportFor, Result};
+use super::{
+	key_deserializer::KeyDeserializer, Deserializer, Error, PositionImpl, ReportFor, Result,
+};
 use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
 use debugless_unwrap::DebuglessUnwrap;
 use serde::de;
@@ -13,10 +15,14 @@ use taml::{
 use tap::Pipe;
 use try_match::try_match;
 
-pub struct EnumAndVariantAccess<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>>(
-	pub &'a mut Deserializer<'b, 'de, Position, Reporter>,
-);
-impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::EnumAccess<'de>
+pub struct EnumAndVariantAccess<
+	'a,
+	'b,
+	'de,
+	Position: PositionImpl,
+	Reporter: diagReporter<Position>,
+>(pub &'a mut Deserializer<'b, 'de, Position, Reporter>);
+impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::EnumAccess<'de>
 	for EnumAndVariantAccess<'a, 'b, 'de, Position, Reporter>
 {
 	type Error = Error;
@@ -37,7 +43,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::EnumAcc
 		.map(|v| (v, self))
 	}
 }
-impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::VariantAccess<'de>
+impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::VariantAccess<'de>
 	for EnumAndVariantAccess<'a, 'b, 'de, Position, Reporter>
 {
 	type Error = Error;
@@ -113,15 +119,15 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 	}
 }
 
-trait ReportUnexpectedVariant<Position: Clone> {
+trait ReportUnexpectedVariant<Position: PositionImpl> {
 	fn report_unexpected_variant<V>(
 		self,
 		msg: &'static str,
 		key_span: Range<Position>,
 	) -> Result<V>;
 }
-impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportUnexpectedVariant<Position>
-	for &mut Deserializer<'a, 'de, Position, Reporter>
+impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
+	ReportUnexpectedVariant<Position> for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	fn report_unexpected_variant<V>(
 		self,
