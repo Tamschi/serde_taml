@@ -18,7 +18,7 @@ struct NoFields {}
 fn unknown_field_none_accepted() {
 	let text = "key: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<NoFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<NoFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -45,7 +45,7 @@ fn unknown_fields_none_accepted() {
 	let text = "key: \"value\"\n\
     another: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<NoFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<NoFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[
@@ -100,7 +100,7 @@ struct ThreeFields {
 fn expected_other_fields() {
 	let text = "key: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<ThreeFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<ThreeFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -128,7 +128,7 @@ fn expected_additional_fields() {
 key: "value"
 "#;
 	let mut diagnostics = vec![];
-	from_taml_str::<ThreeFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<ThreeFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -162,7 +162,7 @@ struct TypedFields {
 fn expect_i8() {
 	let text = "i8: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -181,7 +181,7 @@ fn expect_i8() {
 fn expect_string() {
 	let text = "string: 0\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -200,7 +200,7 @@ fn expect_string() {
 fn expect_f32() {
 	let text = "f32: (1, 2, 3, 4, 5)\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -219,7 +219,7 @@ fn expect_f32() {
 fn decimal_hint_1() {
 	let text = "f32: 1\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -237,7 +237,7 @@ fn decimal_hint_1() {
 fn decimal_hint_2() {
 	let text = "f64: 2\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
@@ -265,7 +265,7 @@ fn extra_fields() {
     unknown: \"It is unknowable.\"\n";
 	let mut diagnostics = vec![];
 	assert_eq!(
-		from_taml_str::<ExtraFields, _>(text, &mut diagnostics)
+		from_taml_str::<ExtraFields, _>(text, &mut diagnostics, &[])
 			.map_err(|err| eprintln!("{}; diagnostics: {:#?}", err, diagnostics))
 			.unwrap(),
 		ExtraFields {
@@ -295,7 +295,7 @@ fn ignored_extra_fields() {
     unknown: \"It is unknowable.\"\n";
 	let mut diagnostics = vec![];
 	assert_eq!(
-		from_taml_str::<IgnoredExtraFields, _>(text, &mut diagnostics).unwrap(),
+		from_taml_str::<IgnoredExtraFields, _>(text, &mut diagnostics, &[]).unwrap(),
 		IgnoredExtraFields {
 			known: "It is known.".to_string(),
 			extra_fields: IgnoredAny,
@@ -317,7 +317,7 @@ struct MissingFields {
 fn missing_fields() {
 	let text = "\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<MissingFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<MissingFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {

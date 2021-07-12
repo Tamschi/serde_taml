@@ -1,4 +1,6 @@
-use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ErrorKind, ReportAt, Result};
+use super::{
+	key_deserializer::KeyDeserializer, Decoder, Deserializer, Error, ErrorKind, ReportAt, Result,
+};
 use either::Either;
 use joinery::JoinableIterator;
 use serde::{de, forward_to_deserialize_any};
@@ -18,6 +20,7 @@ const EXTRA_FIELDS: &str = "taml::extra_fields";
 pub struct StructOrMapAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
 	reporter: &'a mut Reporter,
 	span: Range<Position>,
+	decoders: &'a [(&'a str, &'a Decoder)],
 	entries: Box<
 		dyn 'a
 			+ Iterator<
@@ -36,6 +39,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	pub fn new(
 		reporter: &'a mut Reporter,
 		span: Range<Position>,
+		decoders: &'a [(&'a str, &'a Decoder)],
 		map: &'a Map<'de, Position>,
 		struct_fields: Option<&'static [&'static str]>,
 	) -> Self {
@@ -45,6 +49,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 		#[allow(clippy::eval_order_dependence)]
 		Self {
 			span: span.clone(),
+			decoders,
 			entries: {
 				let present = map.iter().filter_map(move |(k, v)| {
 					((!is_struct || k.name.as_ref() != EXTRA_FIELDS)
@@ -195,7 +200,11 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::MapAccess<'
 			.expect("`next_value_seed` called before `next_key_seed`")
 			.pipe(|value| match value {
 				Either::Left(value) => seed
-					.deserialize(&mut Deserializer(value.as_ref(), self.reporter))
+					.deserialize(&mut Deserializer {
+						data: value.as_ref(),
+						reporter: self.reporter,
+						decoders: self.decoders,
+					})
 					.report_at(self.reporter, value.span.clone()),
 				Either::Right(key) => seed
 					.deserialize(MissingFieldDeserializer(key, self.span.clone()))

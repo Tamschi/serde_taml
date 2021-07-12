@@ -109,46 +109,48 @@ fn deserializer() {
 	";
 
 	assert_eq!(
-		dbg!(from_taml_str::<Deserializable, _>(input, &mut reporter))
-			.tap_err(|_| {
-				let mut codemap = CodeMap::new();
-				let input_span = codemap.add_file("".to_string(), input.to_string()).span;
+		dbg!(from_taml_str::<Deserializable, _>(
+			input,
+			&mut reporter,
+			&[]
+		))
+		.tap_err(|_| {
+			let mut codemap = CodeMap::new();
+			let input_span = codemap.add_file("".to_string(), input.to_string()).span;
 
-				Emitter::stderr(ColorConfig::Auto, Some(&codemap)).emit(
-					reporter
-						.into_iter()
-						.map(|diagnostic| Diagnostic {
-							level: match diagnostic.level() {
-								DiagnosticLevel::Warning => Level::Warning,
-								DiagnosticLevel::Error => Level::Error,
-							},
-							message: "This shouldn't happen.".to_string(),
-							code: Some(diagnostic.code()),
-							spans: diagnostic
-								.labels
-								.into_iter()
-								.map(|label| SpanLabel {
-									span: match label.span {
-										Some(span) => {
-											input_span.subspan(u64(span.start), u64(span.end))
-										}
-										None => {
-											input_span.subspan(input_span.len(), input_span.len())
-										}
-									},
-									label: label.caption.map(Cow::into_owned),
-									style: match label.priority {
-										DiagnosticLabelPriority::Primary => SpanStyle::Primary,
-										DiagnosticLabelPriority::Auxiliary => SpanStyle::Secondary,
-									},
-								})
-								.collect(),
-						})
-						.collect::<Vec<_>>()
-						.as_slice(),
-				);
-			})
-			.unwrap(),
+			Emitter::stderr(ColorConfig::Auto, Some(&codemap)).emit(
+				reporter
+					.into_iter()
+					.map(|diagnostic| Diagnostic {
+						level: match diagnostic.level() {
+							DiagnosticLevel::Warning => Level::Warning,
+							DiagnosticLevel::Error => Level::Error,
+						},
+						message: "This shouldn't happen.".to_string(),
+						code: Some(diagnostic.code()),
+						spans: diagnostic
+							.labels
+							.into_iter()
+							.map(|label| SpanLabel {
+								span: match label.span {
+									Some(span) => {
+										input_span.subspan(u64(span.start), u64(span.end))
+									}
+									None => input_span.subspan(input_span.len(), input_span.len()),
+								},
+								label: label.caption.map(Cow::into_owned),
+								style: match label.priority {
+									DiagnosticLabelPriority::Primary => SpanStyle::Primary,
+									DiagnosticLabelPriority::Auxiliary => SpanStyle::Secondary,
+								},
+							})
+							.collect(),
+					})
+					.collect::<Vec<_>>()
+					.as_slice(),
+			);
+		})
+		.unwrap(),
 		Deserializable {
 			none: None,
 			some: Some(true),

@@ -44,7 +44,7 @@ logos = "0.12.0"
 paste = "1.0.5"
 serde = { version = "1.0.115", default-features = false }
 serde-object = { version = "0.0.0-alpha.0", optional = true } # public
-taml = "0.0.5" # public
+taml = "0.0.6" # public
 tap = "1.0.1"
 try_match = "0.2.2"
 

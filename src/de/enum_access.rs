@@ -27,11 +27,11 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::EnumAcc
 	where
 		V: de::DeserializeSeed<'de>,
 	{
-		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
+		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		seed.deserialize(KeyDeserializer {
 			key: variant.key.clone(),
-			reporter: self.0 .1,
+			reporter: self.0.reporter,
 		})
 		.report_for(self.0)
 		.map(|v| (v, self))
@@ -43,7 +43,7 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 	type Error = Error;
 
 	fn unit_variant(self) -> Result<()> {
-		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
+		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		match variant.payload {
 			VariantPayload::Unit => Ok(()),
@@ -57,10 +57,10 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 	where
 		T: de::DeserializeSeed<'de>,
 	{
-		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
+		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
-		seed.deserialize(&mut Deserializer(
-			match variant.payload {
+		seed.deserialize(&mut Deserializer {
+			data: match variant.payload {
 				VariantPayload::Tuple(list) if list.len() == 1 => &list[0],
 				_ => {
 					return self.0.report_unexpected_variant(
@@ -69,8 +69,8 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 					)
 				}
 			},
-			self.0 .1,
-		))
+			..self.0.by_ref()
+		})
 		.report_for(self.0)
 	}
 
@@ -78,11 +78,11 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 	where
 		V: de::Visitor<'de>,
 	{
-		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
+		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		match variant.payload {
 			VariantPayload::Tuple(list) => visitor
-				.visit_seq(ListAccess::new(self.0 .1, self.0 .0.span.clone(), list))
+				.visit_seq(ListAccess::new(self.0.by_ref(), list))
 				.report_for(self.0),
 			_ => self
 				.0
@@ -94,13 +94,14 @@ impl<'a, 'b, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Variant
 	where
 		V: de::Visitor<'de>,
 	{
-		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0 .0.value)
+		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		match variant.payload {
 			VariantPayload::Structured(map) => visitor
 				.visit_map(StructOrMapAccess::new(
-					self.0 .1,
-					self.0 .0.span.clone(),
+					self.0.reporter,
+					self.0.data.span.clone(),
+					self.0.decoders,
 					map,
 					fields.into(),
 				))
@@ -127,8 +128,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportUnexpecte
 		msg: &'static str,
 		key_span: Range<Position>,
 	) -> Result<V> {
-		let enum_span = self.0.span.clone();
-		self.1.report_with(|| Diagnostic {
+		let enum_span = self.data.span.clone();
+		self.reporter.report_with(|| Diagnostic {
 			r#type: DiagnosticType::CustomErrorFromVisitor,
 			labels: vec![
 				DiagnosticLabel {

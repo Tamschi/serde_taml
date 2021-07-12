@@ -1,26 +1,22 @@
-use super::{Deserializer, Error, ReportAt, Result};
+use super::{Deserializer, Error, ReportFor, Result};
 use serde::de;
-use std::ops::Range;
 use taml::{diagnostics::Reporter as diagReporter, parsing::Taml};
 use tap::Pipe;
 
 #[allow(clippy::type_complexity)]
 pub struct ListAccess<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
-	reporter: &'a mut Reporter,
-	span: Range<Position>,
+	deserializer: Deserializer<'a, 'de, Position, Reporter>,
 	entries: Box<dyn 'a + Iterator<Item = &'a Taml<'de, Position>>>,
 }
 impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	ListAccess<'a, 'de, Position, Reporter>
 {
 	pub fn new(
-		reporter: &'a mut Reporter,
-		span: Range<Position>,
+		deserializer: Deserializer<'a, 'de, Position, Reporter>,
 		list: &'a [Taml<'de, Position>],
 	) -> Self {
 		Self {
-			reporter,
-			span,
+			deserializer,
 			entries: list.iter().pipe(Box::new),
 		}
 	}
@@ -37,9 +33,14 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::SeqAccess<'
 	{
 		self.entries
 			.next()
-			.map(|e| seed.deserialize(&mut Deserializer(e, self.reporter)))
+			.map(|e| {
+				seed.deserialize(&mut Deserializer {
+					data: e,
+					..self.deserializer.by_ref()
+				})
+			})
 			.transpose()
-			.report_at(self.reporter, self.span.clone())
+			.report_for(&mut self.deserializer)
 	}
 
 	fn size_hint(&self) -> Option<usize> {

@@ -24,16 +24,23 @@ use enum_access::EnumAndVariantAccess;
 use list_access::ListAccess;
 use struct_or_map_access::StructOrMapAccess;
 
+/// Used to decode *Decoded* values (`<…:…>`).
+pub type Decoder = dyn Fn(&str) -> Cow<str>;
+
 /// A TAML [Serde](`serde`)-[`Deserializer`](`serde::Deserializer`) implementation.
-pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>(
-	pub &'a Taml<'de, Position>,
-	pub &'a mut Reporter,
-);
+pub struct Deserializer<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
+	pub data: &'a Taml<'de, Position>,
+	pub reporter: &'a mut Reporter,
+	pub decoders: &'a [(&'a str, &'a Decoder)],
+}
 impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>>
 	Deserializer<'a, 'de, Position, Reporter>
 {
 	fn by_ref(&mut self) -> Deserializer<'_, 'de, Position, Reporter> {
-		Deserializer(self.0, self.1)
+		Deserializer {
+			reporter: self.reporter,
+			..*self
+		}
 	}
 }
 
@@ -189,10 +196,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub fn from_taml_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>>(
 	taml_str: &'de str,
 	reporter: &mut Reporter,
+	decoders: &[(&str, &Decoder)],
 ) -> Result<T> {
 	use logos::Logos as _;
 	let lexer = Token::lexer(taml_str).spanned();
-	from_taml_tokens(lexer, reporter)
+	from_taml_tokens(lexer, reporter, decoders)
 }
 
 /// [Deserialize](`de::Deserialize`)s `T` from a previously-tokenised TAML document.
@@ -205,6 +213,7 @@ pub fn from_taml_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>
 pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>(
 	tokens: impl IntoIterator<Item = impl IntoToken<'de, Position>>,
 	reporter: &mut impl diagReporter<Position>,
+	decoders: &[(&str, &Decoder)],
 ) -> Result<T> {
 	let root = parse(tokens, reporter).map_err(|()| ErrorKind::Reported.conv::<Error>())?;
 
@@ -214,6 +223,7 @@ pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>
 			span: Position::default()..Position::default(),
 		},
 		reporter,
+		decoders,
 	)
 }
 
@@ -227,8 +237,13 @@ pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: Clone + Default>
 pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: Clone>(
 	taml: &Taml<'de, Position>,
 	reporter: &mut impl diagReporter<Position>,
+	decoders: &[(&str, &Decoder)],
 ) -> Result<T> {
-	T::deserialize(&mut Deserializer(&taml, reporter))
+	T::deserialize(&mut Deserializer {
+		data: taml,
+		reporter,
+		decoders,
+	})
 }
 
 trait ReportFor<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> {
@@ -300,8 +315,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
-		let span = self.0.span.clone().into();
-		self.1.report_with(move || Diagnostic {
+		let span = self.data.span.clone().into();
+		self.reporter.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidValue,
 			labels: vec![DiagnosticLabel {
 				caption: msg.pipe(Cow::Borrowed).into(),
@@ -313,8 +328,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
 	}
 
 	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V> {
-		let span = self.0.span.clone().into();
-		self.1.report_with(move || Diagnostic {
+		let span = self.data.span.clone().into();
+		self.reporter.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel {
 				caption: msg.pipe(Cow::Borrowed).into(),
@@ -326,8 +341,8 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> ReportInvalid
 	}
 
 	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V> {
-		let span = self.0.span.clone().into();
-		self.1.report_with(move || Diagnostic {
+		let span = self.data.span.clone().into();
+		self.reporter.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel {
 				caption: msg.to_string().pipe(Cow::Owned::<str>).into(),
@@ -346,7 +361,7 @@ macro_rules! parsed {
 			where
 				V: de::Visitor<'de>,
 			{
-				match &self.0.value {
+				match &self.data.value {
 					TamlValue::$Variant(v) => visitor
 						.[<visit_ $Type>](
 							v.parse()
@@ -368,10 +383,10 @@ macro_rules! parsed_float {
 			where
 				V: de::Visitor<'de>,
 			{
-				match &self.0.value {
+				match &self.data.value {
 					TamlValue::Integer(i) => {
-						let span = self.0.span.clone().pipe(Some);
-						self.1.report_with(|| Diagnostic {
+						let span = self.data.span.clone().pipe(Some);
+						self.reporter.report_with(|| Diagnostic {
 							r#type: DiagnosticType::InvalidType,
 							labels: vec![
 								DiagnosticLabel {
@@ -412,16 +427,21 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::String(s) => visitor.visit_str(s),
+			TamlValue::Decoded { encoding, decoded } => {
+				visitor.visit_decoded(encoding.as_ref(), decoded.as_ref(), self.decoders)
+			}
 			TamlValue::Integer(i) => todo!(),
 			TamlValue::Float(f) => todo!(),
-			TamlValue::List(l) => {
-				visitor.visit_seq(ListAccess::new(self.1, self.0.span.clone(), l))
-			}
-			TamlValue::Map(m) => {
-				visitor.visit_map(StructOrMapAccess::new(self.1, self.0.span.clone(), m, None))
-			}
+			TamlValue::List(l) => visitor.visit_seq(ListAccess::new(self.by_ref(), l)),
+			TamlValue::Map(m) => visitor.visit_map(StructOrMapAccess::new(
+				self.reporter,
+				self.data.span.clone(),
+				self.decoders,
+				m,
+				None,
+			)),
 			TamlValue::EnumVariant { .. } => {
 				visitor.visit_enum(EnumAndVariantAccess(&mut self.by_ref()))
 			}
@@ -433,7 +453,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::EnumVariant {
 				key: Key { name, .. },
 				payload: VariantPayload::Unit,
@@ -454,7 +474,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::String(s) => visitor
 				.visit_char(
 					s.parse()
@@ -472,7 +492,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
 			_ => self.report_invalid_type("Expected string (`\"…\"`)."),
 		}
@@ -489,14 +509,19 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		match &self.data.value {
+			TamlValue::Decoded { encoding, decoded } => visitor
+				.visit_decoded(encoding, decoded, self.decoders)
+				.report_for(self),
+			_ => self.report_invalid_type("Expected decoded string (`<…:…>`)."),
+		}
 	}
 
 	fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		todo!()
+		self.deserialize_bytes(visitor)
 	}
 
 	fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
@@ -534,9 +559,9 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::List(l) => visitor
-				.visit_seq(ListAccess::new(self.1, self.0.span.clone(), l))
+				.visit_seq(ListAccess::new(self.by_ref(), l))
 				.report_for(self),
 			_ => self.report_invalid_type("Expected list (`(…)`)."),
 		}
@@ -546,9 +571,9 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::List(l) if l.len() == len => visitor
-				.visit_seq(list_access::ListAccess::new(self.1, self.0.span.clone(), l))
+				.visit_seq(list_access::ListAccess::new(self.by_ref(), l))
 				.report_for(self),
 			TamlValue::List(l) => self.report_invalid_type_owned(format_args!(
 				"Expected {}-tuple, but found a list with {} elements.",
@@ -575,9 +600,15 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::Map(m) => visitor
-				.visit_map(StructOrMapAccess::new(self.1, self.0.span.clone(), m, None))
+				.visit_map(StructOrMapAccess::new(
+					self.reporter,
+					self.data.span.clone(),
+					self.decoders,
+					m,
+					None,
+				))
 				.report_for(self),
 			_ => self.report_invalid_type("Expected map."),
 		}
@@ -592,11 +623,12 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::Map(m) => visitor
 				.visit_map(StructOrMapAccess::new(
-					self.1,
-					self.0.span.clone(),
+					self.reporter,
+					self.data.span.clone(),
+					self.decoders,
 					m,
 					fields.into(),
 				))
@@ -614,7 +646,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::EnumVariant { .. } => visitor
 				.visit_enum(EnumAndVariantAccess(self))
 				.report_for(self),
@@ -626,7 +658,7 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.0.value {
+		match &self.data.value {
 			TamlValue::EnumVariant {
 				key,
 				payload: VariantPayload::Unit,
@@ -644,5 +676,30 @@ impl<'a, 'de, Position: Clone, Reporter: diagReporter<Position>> de::Deserialize
 
 	fn is_human_readable(&self) -> bool {
 		true
+	}
+}
+
+trait VisitDecoded<'de> {
+	type Value;
+	fn visit_decoded(
+		self,
+		encoding: &str,
+		decoded: &str,
+		decoders: &[(&str, &Decoder)],
+	) -> Result<Self::Value>;
+}
+impl<'de, V> VisitDecoded<'de> for V
+where
+	V: de::Visitor<'de>,
+{
+	type Value = V::Value;
+
+	fn visit_decoded(
+		self,
+		encoding: &str,
+		decoded: &str,
+		decoders: &[(&str, &Decoder)],
+	) -> Result<Self::Value> {
+		todo!()
 	}
 }
