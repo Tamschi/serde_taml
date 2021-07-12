@@ -1,6 +1,6 @@
 use joinery::JoinableIterator;
 use paste::paste;
-use serde::de;
+use serde::de::{self, Visitor};
 use std::{
 	borrow::Cow,
 	fmt::{self, Debug, Display, Formatter},
@@ -27,7 +27,7 @@ use list_access::ListAccess;
 use struct_or_map_access::StructOrMapAccess;
 
 /// Used to decode *Decoded* values (`<…:…>`).
-pub type Decoder = dyn Fn(&str) -> core::result::Result<Cow<str>, Vec<DecodingError>>;
+pub type Decoder = dyn Fn(&str) -> core::result::Result<Cow<[u8]>, Vec<DecodingError>>;
 
 pub struct DecodingError {
 	pub decoded_span: Range<usize>,
@@ -714,8 +714,8 @@ where
 				(*encoding == decoded.encoding.as_ref()).then(|| *decoder)
 			})
 			.map(|decoder| match decoder(decoded.decoded.as_ref()) {
-				Ok(Cow::Borrowed(str)) => self.visit_str(str),
-				Ok(Cow::Owned(string)) => self.visit_string(string),
+				Ok(Cow::Borrowed(slice)) => self.visit_bytes(slice),
+				Ok(Cow::Owned(vec)) => self.visit_byte_buf(vec),
 				Err(errors) => {
 					reporter.report_with(|| Diagnostic {
 						r#type: DiagnosticType::InvalidValue,
