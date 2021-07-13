@@ -131,7 +131,7 @@ fn deserializer() {
 							DiagnosticLevel::Warning => Level::Warning,
 							DiagnosticLevel::Error => Level::Error,
 						},
-						message: "This shouldn't happen.".to_string(),
+						message: diagnostic.message().to_string(),
 						code: Some(diagnostic.code()),
 						spans: diagnostic
 							.labels
