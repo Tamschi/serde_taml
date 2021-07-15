@@ -718,36 +718,58 @@ where
 				Ok(Cow::Owned(vec)) => self.visit_byte_buf(vec),
 				Err(errors) => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidValue,
+						r#type: DiagnosticType::EncodeFailed,
 						labels: errors
 							.into_iter()
 							.map(
 								|EncodingError {
 								     decoded_span,
 								     message,
-								 }| DiagnosticLabel {
-									caption: message.into(),
-									span: {
-										let escape_shift = decoded.decoded[..decoded_span.start]
-											.chars()
-											.filter(|c| *c == '>')
-											.count();
-										let start = decoded_span.start + escape_shift;
-										let end = decoded_span.end
-											+ escape_shift + decoded.decoded[decoded_span]
-											.chars()
-											.filter(|c| *c == '>')
-											.count();
-										decoded.decoded_span.start.offset_range(start..end)
-									},
-									priority: DiagnosticLabelPriority::Primary,
+								 }| {
+									DiagnosticLabel::new(
+										message,
+										{
+											let escape_shift = decoded.decoded
+												[..decoded_span.start]
+												.chars()
+												.filter(|c| *c == '>')
+												.count();
+											let start = decoded_span.start + escape_shift;
+											let end = decoded_span.end
+												+ escape_shift + decoded.decoded
+												[decoded_span]
+												.chars()
+												.filter(|c| *c == '>')
+												.count();
+											decoded.decoded_span.start.offset_range(start..end)
+										},
+										DiagnosticLabelPriority::Primary,
+									)
 								},
 							)
-							.chain(iter::once(DiagnosticLabel {
-								caption: Cow::Borrowed("Encoding specified here.").into(),
-								span: decoded.encoding_span.clone().into(),
-								priority: DiagnosticLabelPriority::Auxiliary,
-							}))
+							.chain(iter::once(DiagnosticLabel::new(
+								"Encoding specified here.",
+								decoded.encoding_span.clone(),
+								DiagnosticLabelPriority::Auxiliary,
+							)))
+							.chain(iter::once(DiagnosticLabel::new(
+								format!(
+									"Hint: Available encodings are: {}.",
+									if encoders.is_empty() {
+										"(None)".to_string()
+									} else {
+										format!(
+											"`{}`",
+											encoders
+												.iter()
+												.map(|(encoding, _)| encoding.replace('`', "\\`"))
+												.join_with("`, `")
+										)
+									}
+								),
+								None,
+								DiagnosticLabelPriority::Auxiliary,
+							)))
 							.collect(),
 					});
 					Err(ErrorKind::Reported.into())
@@ -755,19 +777,18 @@ where
 			})
 			.unwrap_or_else(|| {
 				reporter.report_with(|| Diagnostic {
-					r#type: DiagnosticType::CustomErrorFromVisitor,
+					r#type: DiagnosticType::UnknownEncoding,
 					labels: vec![
-						DiagnosticLabel {
-							caption: Cow::Owned::<str>(format!(
+						DiagnosticLabel::new(
+							format!(
 								"Unrecognized encoding `{}`.",
 								decoded.encoding.replace('`', "\\`")
-							))
-							.into(),
-							span: decoded.encoding_span.clone().into(),
-							priority: DiagnosticLabelPriority::Primary,
-						},
-						DiagnosticLabel {
-							caption: Cow::Owned::<str>(format!(
+							),
+							decoded.encoding_span.clone(),
+							DiagnosticLabelPriority::Primary,
+						),
+						DiagnosticLabel::new(
+							format!(
 								"Hint: Available encodings are: {}.",
 								if encoders.is_empty() {
 									"(None)".to_string()
@@ -780,11 +801,10 @@ where
 											.join_with("`, `")
 									)
 								}
-							))
-							.into(),
-							span: decoded.encoding_span.clone().into(),
-							priority: DiagnosticLabelPriority::Auxiliary,
-						},
+							),
+							None,
+							DiagnosticLabelPriority::Auxiliary,
+						),
 					],
 				});
 				Err(ErrorKind::Reported.into())
