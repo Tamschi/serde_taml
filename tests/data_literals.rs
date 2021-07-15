@@ -2,7 +2,7 @@ use cast::{u64, u8};
 use codemap::CodeMap;
 use codemap_diagnostic::{ColorConfig, Diagnostic, Emitter, Level, SpanLabel, SpanStyle};
 use serde::Deserialize;
-use serde_taml::de::{from_taml_str, EncodingError};
+use serde_taml::de::{from_taml_str, EncodeError};
 use std::{borrow::Cow, io::stdout, iter};
 use taml::diagnostics::{DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType};
 use tap::{Conv, Pipe};
@@ -57,8 +57,8 @@ fn unsupported_characters() {
 					if matches!(d, '\0'..='\u{7F}' | '\u{A0}'..='\u{FF}') || INSERT_0X80.contains(d)
 					{
 						error_start.take().into_iter().for_each(|error_start| {
-							errors.push(EncodingError {
-								decoded_span: error_start..i,
+							errors.push(EncodeError {
+								input_span: error_start..i,
 								message: Cow::Owned(format!(
 									"Unsupported character(s): `{}`.",
 									&decoded[error_start..i]

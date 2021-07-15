@@ -26,18 +26,28 @@ use enum_access::EnumAndVariantAccess;
 use list_access::ListAccess;
 use struct_or_map_access::StructOrMapAccess;
 
-/// Used to encode *Decoded* values (`<…:…>`) into binary data.
-pub type Encoder = dyn Fn(&str) -> core::result::Result<Cow<[u8]>, Vec<EncodingError>>;
+/// Used to encode data literals (`<…:…>`) into binary data.
+pub type Encoder = dyn Fn(&str) -> core::result::Result<Cow<[u8]>, Vec<EncodeError>>;
 
-pub struct EncodingError {
-	pub decoded_span: Range<usize>,
+/// Simplified diagnostic that can be emitted as error by [`Encoder`] implementations.
+///
+/// These diagnostics are intended for human consumption and **their processing within `serde_taml` is not versioned**.
+pub struct EncodeError {
+	/// The half-open range of the input [`str`] to label, indexed by bytes.
+	pub input_span: Range<usize>,
+	/// A text with which to label `input_span`. This should ideally be a detailed and self-contained error message.
 	pub message: Cow<'static, str>,
 }
 
 /// A TAML [Serde](`serde`)-[`Deserializer`](`serde::Deserializer`) implementation.
 pub struct Deserializer<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
+	/// The parsed TAML tree to deserialize further.
 	pub data: &'a Taml<'de, Position>,
+	/// A reporter for human-readable [`diagnostics`](`taml::diagnostics`).
+	///
+	/// Diagnostic output is not versioned! You can skip its generation entirely by passing `&mut ()`.
 	pub reporter: &'a mut Reporter,
+	/// A list of recognised encodings for data literals, as pairs of (unescaped) encoding identifier and [`Encoder`] references.
 	pub encoders: &'a [(&'a str, &'a Encoder)],
 }
 impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
@@ -906,8 +916,8 @@ where
 						labels: errors
 							.into_iter()
 							.map(
-								|EncodingError {
-								     decoded_span,
+								|EncodeError {
+								     input_span: decoded_span,
 								     message,
 								 }| {
 									DiagnosticLabel::new(
@@ -996,7 +1006,10 @@ where
 	}
 }
 
+/// Implemented by types usable as `Position` generic type parameter in this library.
 pub trait PositionImpl: Debug + Clone + Default + PartialEq {
+	/// Adds `self` to both limits of `local_range` and returns the result in [`Some`].  
+	/// If this operation does not make sense, [`None`] is returned instead.
 	fn offset_range(&self, local_range: Range<usize>) -> Option<Range<Self>>;
 }
 
