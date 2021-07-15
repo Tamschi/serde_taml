@@ -24,16 +24,16 @@ fn unknown_field_none_accepted() {
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::UnknownField,
 			labels: vec![
-				DiagnosticLabel {
-					caption: Some("Unknown field `key`.".into()),
-					span: Some(0..3),
-					priority: DiagnosticLabelPriority::Primary
-				},
-				DiagnosticLabel {
-					caption: Some("Hint: This struct does not accept any fields.".into()),
-					span: Some(0..0),
-					priority: DiagnosticLabelPriority::Auxiliary,
-				}
+				DiagnosticLabel::new(
+					"Unknown field `key`.",
+					0..3,
+					DiagnosticLabelPriority::Primary
+				),
+				DiagnosticLabel::new(
+					"Hint: This struct does not accept any fields.",
+					0..0,
+					DiagnosticLabelPriority::Auxiliary,
+				)
 			]
 		}]
 	);
@@ -52,31 +52,31 @@ fn unknown_fields_none_accepted() {
 			tamlDiagnostic {
 				r#type: DiagnosticType::UnknownField,
 				labels: vec![
-					DiagnosticLabel {
-						caption: Some("Unknown field `key`.".into()),
-						span: Some(0..3),
-						priority: DiagnosticLabelPriority::Primary
-					},
-					DiagnosticLabel {
-						caption: Some("Hint: This struct does not accept any fields.".into()),
-						span: Some(0..0),
-						priority: DiagnosticLabelPriority::Auxiliary,
-					}
+					DiagnosticLabel::new(
+						"Unknown field `key`.",
+						0..3,
+						DiagnosticLabelPriority::Primary
+					),
+					DiagnosticLabel::new(
+						"Hint: This struct does not accept any fields.",
+						0..0,
+						DiagnosticLabelPriority::Auxiliary,
+					),
 				]
 			},
 			tamlDiagnostic {
 				r#type: DiagnosticType::UnknownField,
 				labels: vec![
-					DiagnosticLabel {
-						caption: Some("Unknown field `another`.".into()),
-						span: Some(13..20),
-						priority: DiagnosticLabelPriority::Primary
-					},
-					DiagnosticLabel {
-						caption: Some("Hint: This struct does not accept any fields.".into()),
-						span: Some(0..0),
-						priority: DiagnosticLabelPriority::Auxiliary,
-					}
+					DiagnosticLabel::new(
+						"Unknown field `another`.",
+						13..20,
+						DiagnosticLabelPriority::Primary
+					),
+					DiagnosticLabel::new(
+						"Hint: This struct does not accept any fields.",
+						0..0,
+						DiagnosticLabelPriority::Auxiliary,
+					),
 				]
 			}
 		]
@@ -106,16 +106,16 @@ fn expected_other_fields() {
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::UnknownField,
 			labels: vec![
-				DiagnosticLabel {
-					caption: Some("Unknown field `key`.".into()),
-					span: Some(0..3),
-					priority: DiagnosticLabelPriority::Primary
-				},
-				DiagnosticLabel {
-					caption: Some("Hint: The following additional fields are accepted here: `field_1`, `field_2`, `field_3`.".into()),
-					span: Some(0..0),
-					priority: DiagnosticLabelPriority::Auxiliary,
-				}
+				DiagnosticLabel::new(
+					"Unknown field `key`.",
+					0..3,
+					DiagnosticLabelPriority::Primary
+				),
+				DiagnosticLabel::new(
+					"Hint: The following additional fields are accepted here: `field_1`, `field_2`, `field_3`.",
+					0..0,
+					DiagnosticLabelPriority::Auxiliary,
+				)
 			]
 		}]
 	);
@@ -134,16 +134,16 @@ key: "value"
 		&[tamlDiagnostic {
 			r#type: DiagnosticType::UnknownField,
 			labels: vec![
-				DiagnosticLabel {
-					caption: Some("Unknown field `key`.".into()),
-					span: Some(12..15),
-					priority: DiagnosticLabelPriority::Primary
-				},
-				DiagnosticLabel {
-					caption: Some("Hint: The following additional fields are accepted here: `field_1`, `field_3`.".into()),
-					span: Some(0..0),
-					priority: DiagnosticLabelPriority::Auxiliary,
-				}
+				DiagnosticLabel::new(
+					"Unknown field `key`.",
+					12..15,
+					DiagnosticLabelPriority::Primary
+				),
+				DiagnosticLabel::new(
+					"Hint: The following additional fields are accepted here: `field_1`, `field_3`.",
+					0..0,
+					DiagnosticLabelPriority::Auxiliary,
+				)
 			]
 		}]
 	);

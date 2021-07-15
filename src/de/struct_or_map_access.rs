@@ -108,15 +108,13 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 						reporter.report_with(|| Diagnostic {
 							r#type: DiagnosticType::UnknownField,
 							labels: vec![
-								DiagnosticLabel {
-									caption: format!("Unknown field `{}`.", k.name)
-										.pipe(Cow::Owned::<str>)
-										.into(),
-									span: k.span.clone().into(),
-									priority: DiagnosticLabelPriority::Primary,
-								},
-								DiagnosticLabel {
-									caption: if struct_fields.is_empty() {
+								DiagnosticLabel::new(
+									format!("Unknown field `{}`.", k.name),
+									k.span.clone(),
+									DiagnosticLabelPriority::Primary,
+								),
+								DiagnosticLabel::new(
+									if struct_fields.is_empty() {
 										"Hint: This struct does not accept any fields."
 											.pipe(Cow::Borrowed)
 									} else {
@@ -141,11 +139,10 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 											message += "(None)"
 										}
 										message.pipe(Cow::Owned)
-									}
-									.into(),
-									span: span.clone().into(),
-									priority: DiagnosticLabelPriority::Auxiliary,
-								},
+									},
+									span.clone(),
+									DiagnosticLabelPriority::Auxiliary,
+								),
 							],
 						})
 					}
@@ -216,18 +213,13 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::MapA
 								self.reporter.report_with(|| Diagnostic {
 									r#type: DiagnosticType::MissingField,
 									labels: vec![
-										DiagnosticLabel {
-											caption: format!(
-												"Missing field `{}`.",
-												key.replace('`', "\\`")
-											)
-											.pipe(Cow::Owned::<str>)
-											.pipe(Some),
-											span: span.into(),
-											priority: DiagnosticLabelPriority::Primary,
-										},
-										DiagnosticLabel {
-											caption: match err.kind {
+										DiagnosticLabel::new(
+											format!("Missing field `{}`.", key.replace('`', "\\`")),
+											span,
+											DiagnosticLabelPriority::Primary,
+										),
+										DiagnosticLabel::new(
+											match err.kind {
 												ErrorKind::SerdeCustom { msg } => msg,
 												ErrorKind::SerdeInvalidType {
 													unexpected,
@@ -299,12 +291,10 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::MapA
 													format!("Invalid value: {}.", msg)
 												}
 												ErrorKind::Reported => unreachable!(),
-											}
-											.pipe(Cow::Owned::<str>)
-											.pipe(Some),
-											span: None,
-											priority: DiagnosticLabelPriority::Auxiliary,
-										},
+											},
+											None,
+											DiagnosticLabelPriority::Auxiliary,
+										),
 									],
 								});
 							}

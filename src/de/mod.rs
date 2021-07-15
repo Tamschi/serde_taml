@@ -1,6 +1,6 @@
 use joinery::JoinableIterator;
 use paste::paste;
-use serde::de::{self, Visitor};
+use serde::de;
 use std::{
 	borrow::Cow,
 	fmt::{self, Debug, Display, Formatter},
@@ -300,11 +300,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 				if !err.is_reported() {
 					reporter.report_with(|| Diagnostic {
 						r#type: DiagnosticType::CustomErrorFromVisitor,
-						labels: vec![DiagnosticLabel {
-							caption: err.to_string().pipe(Cow::Owned::<str>).into(),
-							span: span.into(),
-							priority: DiagnosticLabelPriority::Primary,
-						}],
+						labels: vec![DiagnosticLabel::new(
+							err.to_string(),
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
 					});
 				}
 				Err(ErrorKind::Reported.into())
@@ -322,40 +322,40 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportIn
 	for &mut Deserializer<'a, 'de, Position, Reporter>
 {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
-		let span = self.data.span.clone().into();
+		let span = self.data.span.clone();
 		self.reporter.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidValue,
-			labels: vec![DiagnosticLabel {
-				caption: msg.pipe(Cow::Borrowed).into(),
+			labels: vec![DiagnosticLabel::new(
+				msg,
 				span,
-				priority: DiagnosticLabelPriority::Primary,
-			}],
+				DiagnosticLabelPriority::Primary,
+			)],
 		});
 		Err(ErrorKind::Reported.into())
 	}
 
 	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V> {
-		let span = self.data.span.clone().into();
+		let span = self.data.span.clone();
 		self.reporter.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidType,
-			labels: vec![DiagnosticLabel {
-				caption: msg.pipe(Cow::Borrowed).into(),
+			labels: vec![DiagnosticLabel::new(
+				msg,
 				span,
-				priority: DiagnosticLabelPriority::Primary,
-			}],
+				DiagnosticLabelPriority::Primary,
+			)],
 		});
 		Err(ErrorKind::Reported.into())
 	}
 
 	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V> {
-		let span = self.data.span.clone().into();
+		let span = self.data.span.clone();
 		self.reporter.report_with(move || Diagnostic {
 			r#type: DiagnosticType::InvalidType,
-			labels: vec![DiagnosticLabel {
-				caption: msg.to_string().pipe(Cow::Owned::<str>).into(),
+			labels: vec![DiagnosticLabel::new(
+				msg.to_string(),
 				span,
-				priority: DiagnosticLabelPriority::Primary,
-			}],
+				DiagnosticLabelPriority::Primary,
+			)],
 		});
 		Err(ErrorKind::Reported.into())
 	}
@@ -396,16 +396,16 @@ macro_rules! parsed_float {
 						self.reporter.report_with(|| Diagnostic {
 							r#type: DiagnosticType::InvalidType,
 							labels: vec![
-								DiagnosticLabel {
-									caption: concat!("Expected ", stringify!($Type), ".").pipe(Cow::Borrowed).into(),
-									span: span.clone(),
-									priority: DiagnosticLabelPriority::Primary,
-								},
-								DiagnosticLabel {
-									caption: format!("Hint: Try `{}.0`.", i).pipe(Cow::Owned::<str>).into(),
+								DiagnosticLabel::new(
+									concat!("Expected ", stringify!($Type), "."),
+									span.clone(),
+									DiagnosticLabelPriority::Primary,
+								),
+								DiagnosticLabel::new(
+									format!("Hint: Try `{}.0`.", i),
 									span,
-									priority: DiagnosticLabelPriority::Auxiliary,
-								},
+									DiagnosticLabelPriority::Auxiliary,
+								),
 							],
 						});
 						Err(ErrorKind::Reported.into())

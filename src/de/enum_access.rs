@@ -4,7 +4,7 @@ use super::{
 use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
 use debugless_unwrap::DebuglessUnwrap;
 use serde::de;
-use std::{borrow::Cow, ops::Range};
+use std::ops::Range;
 use taml::{
 	diagnostics::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
@@ -12,7 +12,6 @@ use taml::{
 	},
 	parsing::{TamlValue, VariantPayload},
 };
-use tap::Pipe;
 use try_match::try_match;
 
 pub struct EnumAndVariantAccess<
@@ -138,16 +137,12 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 		self.reporter.report_with(|| Diagnostic {
 			r#type: DiagnosticType::CustomErrorFromVisitor,
 			labels: vec![
-				DiagnosticLabel {
-					caption: msg.pipe(Cow::Borrowed).into(),
-					span: enum_span.into(),
-					priority: DiagnosticLabelPriority::Primary,
-				},
-				DiagnosticLabel {
-					caption: "Variant selected here.".pipe(Cow::Borrowed).into(),
-					span: key_span.into(),
-					priority: DiagnosticLabelPriority::Auxiliary,
-				},
+				DiagnosticLabel::new(msg, enum_span, DiagnosticLabelPriority::Primary),
+				DiagnosticLabel::new(
+					"Variant selected here.",
+					key_span,
+					DiagnosticLabelPriority::Auxiliary,
+				),
 			],
 		});
 		Err(ErrorKind::Reported.into())
