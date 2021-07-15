@@ -68,25 +68,51 @@ impl Error {
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		match &self.kind {
-			ErrorKind::SerdeCustom { msg } => todo!(),
+			ErrorKind::SerdeCustom { msg } => write!(f, "Serde-custom: {}", msg),
 			ErrorKind::SerdeInvalidType {
 				unexpected,
 				expected,
 			} => write!(
 				f,
-				"Invalid type: Expected {} but found {}",
+				"Invalid type: Expected {} but found {}.",
 				expected, unexpected
 			),
 			ErrorKind::SerdeInvalidValue {
 				unexpected,
 				expected,
-			} => todo!(),
-			ErrorKind::SerdeInvalidLength { len, expected } => todo!(),
-			ErrorKind::SerdeUnknownVariant { variant, expected } => todo!(),
-			ErrorKind::SerdeUnknownField { field, expected } => todo!(),
-			ErrorKind::SerdeMissingField { field } => todo!(),
-			ErrorKind::SerdeDuplicateField { field } => todo!(),
-			ErrorKind::InvalidValue { msg } => todo!(),
+			} => write!(
+				f,
+				"Invalid value: Expected {} but found {}.",
+				expected, unexpected
+			),
+			ErrorKind::SerdeInvalidLength { len, expected } => write!(
+				f,
+				"Invalid type: Expected {} but found a length of {}.",
+				expected, len
+			),
+			ErrorKind::SerdeUnknownVariant { variant, expected } => write!(
+				f,
+				"Unknown variant `{}`, expected one of: {}",
+				variant.replace('`', "\\`"),
+				if expected.is_empty() {
+					Cow::Borrowed("None")
+				} else {
+					Cow::Owned(format!("`{}`", expected.iter().join_with("`, `")))
+				}
+			),
+			ErrorKind::SerdeUnknownField { field, expected } => write!(
+				f,
+				"Unknown field `{}`, expected one of: {}",
+				field.replace('`', "\\`"),
+				if expected.is_empty() {
+					Cow::Borrowed("None")
+				} else {
+					Cow::Owned(format!("`{}`", expected.iter().join_with("`, `")))
+				}
+			),
+			ErrorKind::SerdeMissingField { field } => write!(f, "Missing field: {}", field),
+			ErrorKind::SerdeDuplicateField { field } => write!(f, "Duplicate field: {}", field),
+			ErrorKind::InvalidValue { msg } => write!(f, "Invalid value: {}", msg),
 			ErrorKind::Reported => write!(f, "Reported"),
 		}
 	}
