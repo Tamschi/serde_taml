@@ -14,6 +14,8 @@ The `"serde-object-assist"` feature is still available unchanged. (TODO)
   - Changed license to `MIT OR Apache-2.0`.
   - Set minimum Rust version to 1.53
     > which is required by the newer `taml` dependency.
+  - Reworked the entire API with additional features.
+  - Likely fixed all panics.
 
 ## 0.0.1
 
