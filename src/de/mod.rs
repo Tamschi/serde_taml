@@ -499,7 +499,7 @@ macro_rules! parsed {
 					TamlValue::$Variant(v) => visitor
 						.[<visit_ $Type>](
 							v.parse()
-								.map_err(|_| Error::invalid_value(concat!("Expected ", stringify!($Type), ".")))
+								.map_err(|_| Error::invalid_value(concat!("Failed to parse ", stringify!($Type), ".")))
 								.report_for(self)?,
 						)
 						.report_for(self),
@@ -540,7 +540,7 @@ macro_rules! parsed_float {
 					TamlValue::$Variant(v) => visitor
 						.[<visit_ $Type>](
 							v.parse()
-								.map_err(|_| Error::invalid_value(concat!("Expected ", stringify!($Type), ".")))
+								.map_err(|_| Error::invalid_value(concat!("Failed to parse ", stringify!($Type), ".")))
 								.report_for(self)?,
 						)
 						.report_for(self),
@@ -566,8 +566,39 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			TamlValue::Decoded(decoded) => {
 				visitor.visit_decoded(decoded, self.encoders, self.reporter)
 			}
-			TamlValue::Integer(i) => todo!(),
-			TamlValue::Float(f) => todo!(),
+			TamlValue::Integer(i) => if let Ok(i) = i.parse() {
+				visitor.visit_u8(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_i8(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_u16(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_i16(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_u32(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_i32(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_u64(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_i64(i)
+			} else if let Ok(i) = i.parse() {
+				visitor.visit_u128(i)
+			} else {
+				visitor.visit_i128(
+					i.parse()
+						.map_err(|_| Error::invalid_value(concat!("Failed to parse integer.")))
+						.report_for(self)?,
+				)
+			}
+			.report_for(self),
+			TamlValue::Float(f) => visitor
+				.visit_f64(
+					f.parse()
+						.map_err(|_| Error::invalid_value(concat!("Failed to parse float.")))
+						.report_for(self)?,
+				)
+				.report_for(self),
 			TamlValue::List(l) => visitor.visit_seq(ListAccess::new(self.by_ref(), l)),
 			TamlValue::Map(m) => visitor.visit_map(StructOrMapAccess::new(
 				self.reporter,
