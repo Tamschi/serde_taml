@@ -262,25 +262,152 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self {
 		match self {
 			Ok(ok) => Ok(ok),
+			Err(Error {
+				kind: ErrorKind::Reported,
+			}) => Err(ErrorKind::Reported.into()),
 			Err(e) => {
-				match e.kind {
-					ErrorKind::SerdeCustom { msg } => todo!(),
+				let span = deserializer.data.span.clone();
+				deserializer.reporter.report_with(|| match e.kind {
+					ErrorKind::SerdeCustom { msg } => Diagnostic {
+						r#type: DiagnosticType::CustomErrorFromVisitor,
+						labels: vec![DiagnosticLabel::new(
+							msg,
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
 					ErrorKind::SerdeInvalidType {
 						unexpected,
 						expected,
-					} => todo!(),
+					} => Diagnostic {
+						r#type: DiagnosticType::InvalidType,
+						labels: vec![DiagnosticLabel::new(
+							format!("Expected {} but found {}.", expected, unexpected),
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
 					ErrorKind::SerdeInvalidValue {
 						unexpected,
 						expected,
-					} => todo!(),
-					ErrorKind::SerdeInvalidLength { len, expected } => todo!(),
-					ErrorKind::SerdeUnknownVariant { variant, expected } => todo!(),
-					ErrorKind::SerdeUnknownField { field, expected } => todo!(),
-					ErrorKind::SerdeMissingField { field } => todo!(),
-					ErrorKind::SerdeDuplicateField { field } => todo!(),
-					ErrorKind::InvalidValue { msg } => todo!(),
-					ErrorKind::Reported => (),
-				};
+					} => Diagnostic {
+						r#type: DiagnosticType::InvalidValue,
+						labels: vec![DiagnosticLabel::new(
+							format!("Expected {} but found {}.", expected, unexpected),
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
+					ErrorKind::SerdeInvalidLength { len, expected } => Diagnostic {
+						r#type: DiagnosticType::InvalidLength,
+						labels: vec![DiagnosticLabel::new(
+							format!(
+								"Expected {} but found something with length {}.",
+								expected, len
+							),
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
+					ErrorKind::SerdeUnknownVariant { variant, expected } => Diagnostic {
+						r#type: DiagnosticType::UnknownVariant,
+						labels: vec![
+							DiagnosticLabel::new(
+								format!("Unknown variant: `{}`.", variant.replace('`', "\\`")),
+								span.clone(),
+								DiagnosticLabelPriority::Primary,
+							),
+							DiagnosticLabel::new(
+								if expected.is_empty() {
+									"Hint: No expected variants available.".pipe(Cow::Borrowed)
+								} else {
+									let mut message =
+										"Hint: The following variants are accepted here:"
+											.to_string();
+
+									let mut listed_any = false;
+									for variant in expected {
+										listed_any = true;
+										message = message
+											+ " `" + variant.replace('`', "\\`").as_str()
+											+ "`,"
+									}
+									if listed_any {
+										message.pop();
+										message.push('.');
+									} else {
+										message += "(None)"
+									}
+									message.pipe(Cow::Owned)
+								},
+								span,
+								DiagnosticLabelPriority::Auxiliary,
+							),
+						],
+					},
+					ErrorKind::SerdeUnknownField { field, expected } => Diagnostic {
+						r#type: DiagnosticType::UnknownField,
+						labels: vec![
+							DiagnosticLabel::new(
+								format!("Unknown field: `{}`.", field.replace('`', "\\`")),
+								span.clone(),
+								DiagnosticLabelPriority::Primary,
+							),
+							DiagnosticLabel::new(
+								if expected.is_empty() {
+									"Hint: No expected fields available.".pipe(Cow::Borrowed)
+								} else {
+									let mut message =
+										"Hint: The following fields are accepted here:".to_string();
+
+									let mut listed_any = false;
+									for field in expected {
+										listed_any = true;
+										message = message
+											+ " `" + field.replace('`', "\\`").as_str() + "`,"
+									}
+									if listed_any {
+										message.pop();
+										message.push('.');
+									} else {
+										message += "(None)"
+									}
+									message.pipe(Cow::Owned)
+								},
+								span,
+								DiagnosticLabelPriority::Auxiliary,
+							),
+						],
+					},
+					ErrorKind::SerdeMissingField { field } => Diagnostic {
+						r#type: DiagnosticType::MissingField,
+						labels: vec![DiagnosticLabel::new(
+							format!("Missing field: `{}`.", field.replace('`', "\\`")),
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
+					ErrorKind::SerdeDuplicateField { field } => Diagnostic {
+						// TAML cannot actually contain duplicate fields after parsing
+						// (since that raises an error and the data structure does not support it),
+						// but a `serde::de::Deserialize`-implementation can still generate this error.
+						r#type: DiagnosticType::CustomErrorFromVisitor,
+						labels: vec![DiagnosticLabel::new(
+							format!("Duplicate field: `{}`.", field.replace('`', "\\`")),
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
+					ErrorKind::InvalidValue { msg } => Diagnostic {
+						r#type: DiagnosticType::InvalidValue,
+						labels: vec![DiagnosticLabel::new(
+							msg,
+							span,
+							DiagnosticLabelPriority::Primary,
+						)],
+					},
+					ErrorKind::Reported => unreachable!(),
+				});
 				Err(ErrorKind::Reported.into())
 			}
 		}
