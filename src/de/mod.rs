@@ -285,6 +285,7 @@ pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
 	reporter: &mut impl diagReporter<Position>,
 	encoders: &[(&str, &Encoder)],
 ) -> Result<T> {
+	OVERRIDE.take();
 	T::deserialize(&mut Deserializer {
 		data: taml,
 		reporter,
