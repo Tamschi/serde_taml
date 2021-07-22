@@ -22,9 +22,14 @@ mod key_deserializer;
 mod list_access;
 mod struct_or_map_access;
 
+pub mod type_overrides;
+
 use enum_access::EnumAndVariantAccess;
 use list_access::ListAccess;
 use struct_or_map_access::StructOrMapAccess;
+use type_overrides::OVERRIDE;
+
+use self::type_overrides::{ForcedTamlValueType, Override};
 
 /// Used to encode data literals (`<…:…>`) into binary data.
 pub type Encoder = dyn Fn(&str) -> core::result::Result<Cow<[u8]>, Vec<EncodeError>>;
@@ -693,9 +698,17 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::String(s) => visitor.visit_str(s).report_for(self),
-			_ => self.report_invalid_type("Expected string (`\"…\"`)."),
+		match OVERRIDE
+			.take()
+			.unwrap_or(ForcedTamlValueType::String)
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::String(str) => visitor.visit_str(str),
+			TamlValue::Decoded(_) => todo!(),
+			TamlValue::Integer(str) | TamlValue::Float(str) => visitor.visit_str(str),
+			TamlValue::List(_) => todo!(),
+			TamlValue::Map(_) => todo!(),
+			TamlValue::EnumVariant { key, payload } => todo!(),
 		}
 	}
 
