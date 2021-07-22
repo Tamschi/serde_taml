@@ -714,6 +714,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			| TamlValue::Map(_)
 			| TamlValue::EnumVariant { .. } => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
