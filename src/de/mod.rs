@@ -27,9 +27,7 @@ pub mod type_overrides;
 use enum_access::EnumAndVariantAccess;
 use list_access::ListAccess;
 use struct_or_map_access::StructOrMapAccess;
-use type_overrides::OVERRIDE;
-
-use self::type_overrides::{ForcedTamlValueType, Override};
+use type_overrides::{AssertAcceptableAndUnwrapOrDefault, ForcedTamlValueType, Override, OVERRIDE};
 
 /// Used to encode data literals (`<…:…>`) into binary data.
 pub type Encoder = dyn Fn(&str) -> core::result::Result<Cow<[u8]>, Vec<EncodeError>>;
@@ -700,15 +698,21 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	{
 		match OVERRIDE
 			.take()
-			.unwrap_or(ForcedTamlValueType::String)
+			.assert_acceptable_and_unwrap(
+				ForcedTamlValueType::String,
+				&[ForcedTamlValueType::Integer, ForcedTamlValueType::Decimal],
+			)
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
-			TamlValue::String(str) => visitor.visit_str(str),
-			TamlValue::Decoded(_) => todo!(),
-			TamlValue::Integer(str) | TamlValue::Float(str) => visitor.visit_str(str),
-			TamlValue::List(_) => todo!(),
-			TamlValue::Map(_) => todo!(),
-			TamlValue::EnumVariant { key, payload } => todo!(),
+			TamlValue::String(str) => match str {
+				cervine::Cow::Owned(str) => visitor.visit_str(str.as_str()),
+				cervine::Cow::Borrowed(str) => visitor.visit_borrowed_str(str),
+			},
+			TamlValue::Integer(str) | TamlValue::Float(str) => visitor.visit_borrowed_str(str),
+			TamlValue::Decoded(_)
+			| TamlValue::List(_)
+			| TamlValue::Map(_)
+			| TamlValue::EnumVariant { .. } => unreachable!(),
 		}
 	}
 

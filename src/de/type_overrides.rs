@@ -1,6 +1,6 @@
 use crate::de::ErrorKind;
 use serde::de;
-use std::{cell::Cell, ops::Range, thread::LocalKey};
+use std::{cell::Cell, fmt::Display, ops::Range, thread::LocalKey};
 use taml::{
 	diagnostics::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
@@ -28,6 +28,7 @@ impl Override for LocalKey<Cell<Option<ForcedTamlValueType>>> {
 	}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum ForcedTamlValueType {
 	String,
 	DataLiteral,
@@ -99,12 +100,50 @@ impl ForcedTamlValueType {
 		}
 	}
 }
+impl Display for ForcedTamlValueType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(match self {
+			ForcedTamlValueType::String => "string",
+			ForcedTamlValueType::DataLiteral => "data literal",
+			ForcedTamlValueType::Integer => "integer",
+			ForcedTamlValueType::Decimal => "decimal",
+		})
+	}
+}
+
+pub(crate) trait AssertAcceptableAndUnwrapOrDefault<T> {
+	fn assert_acceptable_and_unwrap(self, default: T, other_acceptable: &[T]) -> T;
+}
+impl AssertAcceptableAndUnwrapOrDefault<ForcedTamlValueType> for Option<ForcedTamlValueType> {
+	fn assert_acceptable_and_unwrap(
+		self,
+		default: ForcedTamlValueType,
+		other_acceptable: &[ForcedTamlValueType],
+	) -> ForcedTamlValueType {
+		match self {
+			None => default,
+			Some(forced) if forced == default || other_acceptable.contains(&forced) => forced,
+			Some(forced) => panic!(
+				"Unsupported TAML type override: Can't expect {} when parsing {}.",
+				forced, default
+			),
+		}
+	}
+}
 
 /// Overrides TAML value type restrictions to expect a decimal.
 ///
 /// # Errors
 ///
 /// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from decimals:
+///
+/// - Strings
+///
+/// In all other cases, a panic will occur during deserialization.
 pub fn from_decimal<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
 	D: de::Deserializer<'de>,
