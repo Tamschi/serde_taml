@@ -1,3 +1,4 @@
+use super::type_overrides::{Override, OVERRIDE};
 use super::{
 	key_deserializer::KeyDeserializer, Deserializer, Encoder, Error, ErrorKind, PositionImpl,
 	ReportAt, Result,
@@ -319,6 +320,7 @@ impl<'a, 'de, Position> de::Deserializer<'de> for MissingFieldDeserializer<'a, P
 	where
 		V: de::Visitor<'de>,
 	{
+		OVERRIDE.take();
 		visitor.visit_none()
 	}
 

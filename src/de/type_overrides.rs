@@ -34,10 +34,11 @@ pub(super) enum ForcedTamlValueType {
 	DataLiteral,
 	Integer,
 	Decimal,
+	EnumVariant,
 }
 impl ForcedTamlValueType {
 	pub fn pick<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>(
-		&self,
+		self,
 		value: &'a TamlValue<'de, Position>,
 		span: &Range<Position>,
 		reporter: &mut Reporter,
@@ -62,8 +63,34 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
-			ForcedTamlValueType::DataLiteral => todo!(),
-			ForcedTamlValueType::Integer => todo!(),
+			ForcedTamlValueType::DataLiteral => match value {
+				v @ TamlValue::Decoded(_) => Ok(v),
+				_ => {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::InvalidType,
+						labels: vec![DiagnosticLabel::new(
+							"Expected data literal (`<…;…>`).",
+							span.clone(),
+							DiagnosticLabelPriority::Primary,
+						)],
+					});
+					Err(ErrorKind::Reported.into())
+				}
+			},
+			ForcedTamlValueType::Integer => match value {
+				v @ TamlValue::Integer(_) => Ok(v),
+				_ => {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::InvalidType,
+						labels: vec![DiagnosticLabel::new(
+							"Expected integer.",
+							span.clone(),
+							DiagnosticLabelPriority::Primary,
+						)],
+					});
+					Err(ErrorKind::Reported.into())
+				}
+			},
 			ForcedTamlValueType::Decimal => match value {
 				TamlValue::Integer(i) => {
 					let span = span.clone().pipe(Some);
@@ -97,6 +124,20 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
+			ForcedTamlValueType::EnumVariant => match value {
+				v @ TamlValue::EnumVariant { .. } => Ok(v),
+				_ => {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::InvalidType,
+						labels: vec![DiagnosticLabel::new(
+							r#"Expected enum variant (`key` or `key(…)`)."#,
+							span.clone(),
+							DiagnosticLabelPriority::Primary,
+						)],
+					});
+					Err(ErrorKind::Reported.into())
+				}
+			},
 		}
 	}
 }
@@ -107,6 +148,7 @@ impl Display for ForcedTamlValueType {
 			ForcedTamlValueType::DataLiteral => "data literal",
 			ForcedTamlValueType::Integer => "integer",
 			ForcedTamlValueType::Decimal => "decimal",
+			ForcedTamlValueType::EnumVariant => "enum variant",
 		})
 	}
 }
@@ -131,6 +173,50 @@ impl AssertAcceptableAndUnwrapOrDefault<ForcedTamlValueType> for Option<ForcedTa
 	}
 }
 
+/// Overrides TAML value type restrictions to expect a string.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from strings:
+///
+/// - Strings
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_string<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::String);
+	T::deserialize(deserializer)
+}
+
+/// Overrides TAML value type restrictions to expect a data literal.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from data literals:
+///
+/// - Bytes
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_data_literal<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::DataLiteral);
+	T::deserialize(deserializer)
+}
+
 /// Overrides TAML value type restrictions to expect a decimal.
 ///
 /// # Errors
@@ -142,6 +228,7 @@ impl AssertAcceptableAndUnwrapOrDefault<ForcedTamlValueType> for Option<ForcedTa
 /// Only the following can be overridden to deserialize from decimals:
 ///
 /// - Strings
+/// - Decimals
 ///
 /// In all other cases, a panic will occur during deserialization.
 pub fn from_decimal<'de, D, T>(deserializer: D) -> Result<T, D::Error>

@@ -601,7 +601,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
+		match if let Some(o) = OVERRIDE.take() {
+			o.pick(&self.data.value, &self.data.span, self.reporter)?
+		} else {
+			&self.data.value
+		} {
 			TamlValue::String(s) => visitor.visit_str(s),
 			TamlValue::Decoded(decoded) => {
 				visitor.visit_decoded(decoded, self.encoders, self.reporter)
@@ -658,7 +662,28 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(
+				ForcedTamlValueType::EnumVariant,
+				&[ForcedTamlValueType::String, ForcedTamlValueType::Integer],
+			)
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::String(str) => match str.as_ref() {
+				"true" => visitor.visit_bool(true),
+				"false" => visitor.visit_bool(false),
+				_ => self.report_invalid_value(r#"Expected boolean string `"true"` or `"false"`."#),
+			},
+
+			TamlValue::Integer(str) => match *str {
+				"0" => visitor.visit_bool(false),
+				"1" => visitor.visit_bool(true),
+				_ => {
+					self.report_invalid_value("Expected boolean integer `0` (false) or `1` (true).")
+				}
+			},
+
 			TamlValue::EnumVariant {
 				key: Key { name, .. },
 				payload: VariantPayload::Unit,
@@ -667,8 +692,16 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				key: Key { name, .. },
 				payload: VariantPayload::Unit,
 			} if name == "false" => visitor.visit_bool(false).report_for(self),
-			_ => self.report_invalid_type("Expected boolean unit variant `true` or `false`."),
+			TamlValue::EnumVariant { .. } => {
+				self.report_invalid_type("Expected boolean unit variant `true` or `false`.")
+			}
+
+			TamlValue::Decoded(_)
+			| TamlValue::List(_)
+			| TamlValue::Map(_)
+			| TamlValue::Float(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	parsed!(Integer => i8, i16, i32, i64, i128);
@@ -689,7 +722,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 						.report_for(self)?,
 				)
 				.report_for(self),
-			_ => self.report_invalid_type("Expected single character string (`\"…\"`)."),
+			_ => self.report_invalid_value("Expected single character string (`\"…\"`)."),
 		}
 	}
 
@@ -701,19 +734,28 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			.take()
 			.assert_acceptable_and_unwrap(
 				ForcedTamlValueType::String,
-				&[ForcedTamlValueType::Integer, ForcedTamlValueType::Decimal],
+				&[
+					ForcedTamlValueType::EnumVariant,
+					ForcedTamlValueType::Integer,
+					ForcedTamlValueType::Decimal,
+				],
 			)
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
-			TamlValue::String(str) => match str {
+			TamlValue::String(str)
+			| TamlValue::EnumVariant {
+				key: Key { name: str, .. },
+				payload: VariantPayload::Unit,
+			} => match str {
 				cervine::Cow::Owned(str) => visitor.visit_str(str.as_str()),
 				cervine::Cow::Borrowed(str) => visitor.visit_borrowed_str(str),
 			},
+
+			TamlValue::EnumVariant { .. } => self.report_invalid_value("Expected identifier."),
+
 			TamlValue::Integer(str) | TamlValue::Float(str) => visitor.visit_borrowed_str(str),
-			TamlValue::Decoded(_)
-			| TamlValue::List(_)
-			| TamlValue::Map(_)
-			| TamlValue::EnumVariant { .. } => unreachable!(),
+
+			TamlValue::Decoded(_) | TamlValue::List(_) | TamlValue::Map(_) => unreachable!(),
 		}
 		.report_for(self)
 	}
@@ -749,6 +791,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 		V: de::Visitor<'de>,
 	{
 		// Options are flattened; that there's this `Deserializer` instance at all already means there is a value here.
+		// Similarly, overrides aren't reset here and will be used for the next layer of deserialisation instead.
 		visitor.visit_some(&mut self.by_ref()).report_for(self)
 	}
 
