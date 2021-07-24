@@ -2,6 +2,14 @@
 //! but **not** how the [`super::Deserializer`] interacts with Serde
 //! (beyond delayed panics on encountering incompatibilities).
 //! 
+//! > **Warning:**
+//! >
+//! > I had to use a (thread-local) side channel here.
+//! > It should be well-behaved with any [`de::Deserialize`] implementation that Serde generated,
+//! > but there may be issues if you jump between two deserializers.
+//! >
+//! > A proper fix is planned, but can only be implemented on stable once trait specialisation lands.
+//! 
 //! Serde/TAML compatibility table:
 //! 
 //! <table>
