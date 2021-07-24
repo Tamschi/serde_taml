@@ -651,6 +651,14 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				m,
 				None,
 			)),
+			TamlValue::EnumVariant {
+				key: Key { name, .. },
+				payload: VariantPayload::Unit,
+			} if name == "true" => visitor.visit_bool(true),
+			TamlValue::EnumVariant {
+				key: Key { name, .. },
+				payload: VariantPayload::Unit,
+			} if name == "false" => visitor.visit_bool(false),
 			TamlValue::EnumVariant { .. } => {
 				visitor.visit_enum(EnumAndVariantAccess(&mut self.by_ref()))
 			}

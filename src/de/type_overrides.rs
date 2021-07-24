@@ -26,7 +26,7 @@
 //!     <td colspan=7>(restricting to one default cell below, in a row marked with "(any)")</td>
 //! </tr>
 //! <tr>
-//!     <th>bool</th>
+//!     <th>bool<br>(any, with priority)</th>
 //!     <td></td>
 //!     <td></td>
 //!     <td>(default) <code>true</code>, <code>false</code></td>
@@ -35,11 +35,11 @@
 //!     <td><code>"true"</code>, <code>"false"</code></td>
 //! </tr>
 //! <tr>
-//!     <th>i8, i16, i32, i64, i128, u8, u16, u32, u64, u128<br>(any)</th>
+//!     <th>u8, i8, u16, i16, u32, i32, i64, u64, i128, u128<br>(any, in that order)</th>
 //!     <td colspan=7>TODO</td>
 //! </tr>
 //! <tr>
-//!     <th>f32, f64<br>(any)</th>
+//!     <th>f32, f64<br>(any, always as f64)</th>
 //!     <td colspan=7>TODO</td>
 //! </tr>
 //! <tr>
