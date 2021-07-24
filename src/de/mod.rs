@@ -712,18 +712,40 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::String(s) => visitor
-				.visit_char(
-					s.parse()
-						.map_err(|_| {
-							Error::invalid_value("Expected single character string (`\"…\"`).")
-						})
-						.report_for(self)?,
-				)
-				.report_for(self),
-			_ => self.report_invalid_value("Expected single character string (`\"…\"`)."),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(
+				ForcedTamlValueType::String,
+				&[
+					ForcedTamlValueType::EnumVariant,
+					ForcedTamlValueType::Integer,
+				],
+			)
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::String(str)
+			| TamlValue::EnumVariant {
+				key: Key { name: str, .. },
+				payload: VariantPayload::Unit,
+			} if str.as_ref().chars().count() == 1 => visitor.visit_char(str.chars().next().unwrap()),
+			TamlValue::Integer(str) if str.chars().count() == 1 => {
+				visitor.visit_char(str.chars().next().unwrap())
+			}
+
+			TamlValue::String(_) => self.report_invalid_value("Expected single codepoint string."),
+			TamlValue::EnumVariant { .. } => {
+				self.report_invalid_value("Expected single codepoint identifier.")
+			}
+			TamlValue::Integer(_) => {
+				self.report_invalid_value("Expected positive single digit integer.")
+			}
+
+			TamlValue::Decoded(_)
+			| TamlValue::List(_)
+			| TamlValue::Map(_)
+			| TamlValue::Float(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
@@ -751,7 +773,9 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				cervine::Cow::Borrowed(str) => visitor.visit_borrowed_str(str),
 			},
 
-			TamlValue::EnumVariant { .. } => self.report_invalid_value("Expected identifier."),
+			TamlValue::EnumVariant { .. } => {
+				self.report_invalid_value("Expected plain identifier.")
+			}
 
 			TamlValue::Integer(str) | TamlValue::Float(str) => visitor.visit_borrowed_str(str),
 
@@ -771,12 +795,34 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::Decoded(decoded) => visitor
-				.visit_decoded(decoded, self.encoders, self.reporter)
-				.report_for(self),
-			_ => self.report_invalid_type("Expected decoded string (`<…:…>`)."),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(
+				ForcedTamlValueType::DataLiteral,
+				&[ForcedTamlValueType::String],
+			)
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::Decoded(decoded) => {
+				visitor.visit_decoded(decoded, self.encoders, self.reporter)
+			}
+
+			TamlValue::String(str)
+			| TamlValue::EnumVariant {
+				key: Key { name: str, .. },
+				payload: VariantPayload::Unit,
+			} => match str {
+				cervine::Cow::Owned(str) => visitor.visit_bytes(str.as_bytes()),
+				cervine::Cow::Borrowed(str) => visitor.visit_borrowed_bytes(str.as_bytes()),
+			},
+
+			TamlValue::EnumVariant { .. }
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_)
+			| TamlValue::List(_)
+			| TamlValue::Map(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
@@ -834,17 +880,28 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::List(l) if l.len() == len => visitor
-				.visit_seq(list_access::ListAccess::new(self.by_ref(), l))
-				.report_for(self),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(ForcedTamlValueType::List, &[])
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::List(l) if l.len() == len => {
+				visitor.visit_seq(list_access::ListAccess::new(self.by_ref(), l))
+			}
 			TamlValue::List(l) => self.report_invalid_type_owned(format_args!(
-				"Expected {}-tuple, but found a list with {} elements.",
+				"Expected list with {} element(s), but found one with {} element(s).",
 				len,
 				l.len(),
 			)),
-			_ => self.report_invalid_type_owned(format_args!("Expected {}-tuple (`(…)`).", len)),
+
+			TamlValue::Decoded(_)
+			| TamlValue::String(_)
+			| TamlValue::EnumVariant { .. }
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_)
+			| TamlValue::Map(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_tuple_struct<V>(
@@ -863,18 +920,27 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::Map(m) => visitor
-				.visit_map(StructOrMapAccess::new(
-					self.reporter,
-					self.data.span.clone(),
-					self.encoders,
-					m,
-					None,
-				))
-				.report_for(self),
-			_ => self.report_invalid_type("Expected map."),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(ForcedTamlValueType::Struct, &[])
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::Map(m) => visitor.visit_map(StructOrMapAccess::new(
+				self.reporter,
+				self.data.span.clone(),
+				self.encoders,
+				m,
+				None,
+			)),
+
+			TamlValue::Decoded(_)
+			| TamlValue::String(_)
+			| TamlValue::EnumVariant { .. }
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_)
+			| TamlValue::List(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_struct<V>(
@@ -886,18 +952,27 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::Map(m) => visitor
-				.visit_map(StructOrMapAccess::new(
-					self.reporter,
-					self.data.span.clone(),
-					self.encoders,
-					m,
-					fields.into(),
-				))
-				.report_for(self),
-			_ => self.report_invalid_type("Expected struct."),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(ForcedTamlValueType::Struct, &[])
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::Map(m) => visitor.visit_map(StructOrMapAccess::new(
+				self.reporter,
+				self.data.span.clone(),
+				self.encoders,
+				m,
+				fields.into(),
+			)),
+
+			TamlValue::Decoded(_)
+			| TamlValue::String(_)
+			| TamlValue::EnumVariant { .. }
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_)
+			| TamlValue::List(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_enum<V>(
@@ -909,31 +984,38 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::EnumVariant { .. } => visitor
-				.visit_enum(EnumAndVariantAccess(self))
-				.report_for(self),
-			_ => self.report_invalid_type("Expected enum."),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(ForcedTamlValueType::EnumVariant, &[])
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::EnumVariant { .. } => visitor.visit_enum(EnumAndVariantAccess(self)),
+			TamlValue::Decoded(_)
+			| TamlValue::String(_)
+			| TamlValue::Map(_)
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_)
+			| TamlValue::List(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::EnumVariant {
-				key,
-				payload: VariantPayload::Unit,
-			} => visitor.visit_str(key.name.as_ref()).report_for(self),
-			_ => self.report_invalid_type("Expected identifier."),
-		}
+		OVERRIDE.insert_if_none(ForcedTamlValueType::EnumVariant);
+		self.deserialize_str(visitor)
 	}
 
 	fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
+		if let Some(o) = OVERRIDE.take() {
+			o.pick(&self.data.value, &self.data.span, self.reporter)?;
+		}
+
 		visitor.visit_unit().report_for(self)
 	}
 

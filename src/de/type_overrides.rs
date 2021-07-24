@@ -12,11 +12,21 @@ use tap::Pipe;
 
 use super::{Error, PositionImpl};
 
-thread_local!(pub(super) static OVERRIDE: Cell<Option<ForcedTamlValueType>> = Cell::default());
+thread_local! {
+	/// Sets a TAML data type override for the next value aside from options, which are transparent.
+	///
+	/// > This isn't a great solution, but should behave fine with well-behaved [`de::Deserialize`] implementations.
+	/// >
+	/// > A fixed version would use trait specialisation to wrap [`super::Deserializer`] instances.
+	/// > (It's possible this might function even know due to `deserialize_with = "…"` duck-typing,
+	/// > but implementing it as such would be outside Serde's documented API and as such too brittle.)
+	pub(super) static OVERRIDE: Cell<Option<ForcedTamlValueType>> = Cell::default();
+}
 
 pub(super) trait Override {
 	fn set(&'static self, force: ForcedTamlValueType);
 	fn take(&'static self) -> Option<ForcedTamlValueType>;
+	fn insert_if_none(&'static self, new_default: ForcedTamlValueType);
 }
 impl Override for LocalKey<Cell<Option<ForcedTamlValueType>>> {
 	fn set(&'static self, force: ForcedTamlValueType) {
@@ -26,15 +36,25 @@ impl Override for LocalKey<Cell<Option<ForcedTamlValueType>>> {
 	fn take(&'static self) -> Option<ForcedTamlValueType> {
 		self.with(Cell::take)
 	}
+
+	fn insert_if_none(&'static self, new_default: ForcedTamlValueType) {
+		self.with(|this| {
+			if this.get().is_none() {
+				this.set(new_default.into())
+			}
+		})
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum ForcedTamlValueType {
-	String,
 	DataLiteral,
-	Integer,
 	Decimal,
 	EnumVariant,
+	Integer,
+	List,
+	String,
+	Struct,
 }
 impl ForcedTamlValueType {
 	pub fn pick<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>(
@@ -63,6 +83,7 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
+
 			ForcedTamlValueType::DataLiteral => match value {
 				v @ TamlValue::Decoded(_) => Ok(v),
 				_ => {
@@ -77,6 +98,7 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
+
 			ForcedTamlValueType::Integer => match value {
 				v @ TamlValue::Integer(_) => Ok(v),
 				_ => {
@@ -91,6 +113,7 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
+
 			ForcedTamlValueType::Decimal => match value {
 				TamlValue::Integer(i) => {
 					let span = span.clone().pipe(Some);
@@ -124,6 +147,7 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
+
 			ForcedTamlValueType::EnumVariant => match value {
 				v @ TamlValue::EnumVariant { .. } => Ok(v),
 				_ => {
@@ -138,17 +162,49 @@ impl ForcedTamlValueType {
 					Err(ErrorKind::Reported.into())
 				}
 			},
+
+			ForcedTamlValueType::List => match value {
+				v @ TamlValue::List(_) => Ok(v),
+				_ => {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::InvalidType,
+						labels: vec![DiagnosticLabel::new(
+							"Expected list (`(…)`).",
+							span.clone(),
+							DiagnosticLabelPriority::Primary,
+						)],
+					});
+					Err(ErrorKind::Reported.into())
+				}
+			},
+
+			ForcedTamlValueType::Struct => match value {
+				v @ TamlValue::Map(_) => Ok(v),
+				_ => {
+					reporter.report_with(|| Diagnostic {
+						r#type: DiagnosticType::InvalidType,
+						labels: vec![DiagnosticLabel::new(
+							"Expected struct.",
+							span.clone(),
+							DiagnosticLabelPriority::Primary,
+						)],
+					});
+					Err(ErrorKind::Reported.into())
+				}
+			},
 		}
 	}
 }
 impl Display for ForcedTamlValueType {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.write_str(match self {
-			ForcedTamlValueType::String => "string",
 			ForcedTamlValueType::DataLiteral => "data literal",
-			ForcedTamlValueType::Integer => "integer",
 			ForcedTamlValueType::Decimal => "decimal",
 			ForcedTamlValueType::EnumVariant => "enum variant",
+			ForcedTamlValueType::Integer => "integer",
+			ForcedTamlValueType::List => "list",
+			ForcedTamlValueType::String => "string",
+			ForcedTamlValueType::Struct => "struct",
 		})
 	}
 }
