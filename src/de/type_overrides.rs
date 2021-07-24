@@ -1,3 +1,172 @@
+//! TAML type overrides affect only the expected TAML representation of a value,
+//! but **not** how the [`super::Deserializer`] interacts with Serde
+//! (beyond delayed panics on encountering incompatibilities).
+//! 
+//! Serde/TAML compatibility table:
+//! 
+//! <table>
+//! <thead>
+//! <tr>
+//!     <th rowspan=0>deserialize_…</th>
+//!     <th colspan=7>TAML</th>
+//! </tr>
+//! <tr>
+//!     <th>data literal</th>
+//!     <th>decimal</th>
+//!     <th>enum variant</th>
+//!     <th>integer</th>
+//!     <th>list</th>
+//!     <th>string</th>
+//!     <th>struct</th>
+//! </tr>
+//! </thead>
+//! <tbody>
+//! <tr>
+//!     <th>any</th>
+//!     <td colspan=7>(restricting to one default cell below, in a row marked with "(any)")</td>
+//! </tr>
+//! <tr>
+//!     <th>bool</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default) <code>true</code>, <code>false</code></td>
+//!     <td><code>1</code>, <code>0</code></td>
+//!     <td></td>
+//!     <td><code>"true"</code>, <code>"false"</code></td>
+//! </tr>
+//! <tr>
+//!     <th>i8, i16, i32, i64, i128, u8, u16, u32, u64, u128<br>(any)</th>
+//!     <td colspan=7>TODO</td>
+//! </tr>
+//! <tr>
+//!     <th>f32, f64<br>(any)</th>
+//!     <td colspan=7>TODO</td>
+//! </tr>
+//! <tr>
+//!     <th>char</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td>single-codepoint identifier of unit variant</td>
+//!     <td>single-digit positive integer</td>
+//!     <td></td>
+//!     <td>(default) single-codepoint</td>
+//! </tr>
+//! <tr>
+//!     <th>str, string<br>(any)</th>
+//!     <td></td>
+//!     <td>full literal</td>
+//!     <td>identifier of unit variant</td>
+//!     <td>full literal</td>
+//!     <td></td>
+//!     <td>(default) unquoted and unescaped</td>
+//! </tr>
+//! <tr>
+//!     <th>bytes, bytes_buf<br>(any)</th>
+//!     <td>(default) parsed</td>
+//!     <td></td>
+//!     <td>identifier of unit variant in UTF-8</td>
+//!     <td></td>
+//!     <td></td>
+//!     <td>unquoted and unescaped in UTF-8</td>
+//! </tr>
+//! <tr>
+//!     <th>option</th>
+//!     <td colspan=7>(transparent)</td>
+//! </tr>
+//! <tr>
+//!     <th>unit</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default) <code>()</code></td>
+//!     <td></td>
+//!     <td>(no fields)</td>
+//! </tr>
+//! <tr>
+//!     <th>unit_struct</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td><code>()</code></td>
+//!     <td></td>
+//!     <td>(default) (no fields)</td>
+//! </tr>
+//! <tr>
+//!     <th>newtype_struct</th>
+//!     <td colspan=7>(transparent)</td>
+//! </tr>
+//! <tr>
+//!     <th>seq<br>(any)</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default)</td>
+//!     <td></td>
+//!     <td></td>
+//! </tr>
+//! <tr>
+//!     <th>tuple, tuple_struct</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default) (exact length)</td>
+//!     <td></td>
+//!     <td></td>
+//! </tr>
+//! <tr>
+//!     <th>map<br>(any)</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default)</td>
+//! </tr>
+//! <tr>
+//!     <th>struct</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default) (exact fields)</td>
+//! </tr>
+//! <tr>
+//!     <th>enum<br>(any¹)</th>
+//!     <td></td>
+//!     <td></td>
+//!     <td>(default)</td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//!     <td></td>
+//! </tr>
+//! <tr>
+//!     <th>identifier</th>
+//!     <td></td>
+//!     <td>full literal</td>
+//!     <td>(default) identifier of unit variant</td>
+//!     <td>full literal</td>
+//!     <td></td>
+//!     <td>unquoted and unescaped</td>
+//!     <td></td>
+//! </tr>
+//! <tr>
+//!     <th>ignored_any</th>
+//!     <td colspan=7>(restricting, but only by TAML value type)</td>
+//! </tr>
+//! </tbody>
+//! </table>
+//! 
+//! ¹ Use the `"serde-object-assist"` feature to predict enum variants.
+
+
 use crate::de::ErrorKind;
 use serde::de;
 use std::{cell::Cell, fmt::Display, ops::Range, thread::LocalKey};

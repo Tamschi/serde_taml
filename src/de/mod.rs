@@ -845,14 +845,32 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		self.deserialize_tuple(0, visitor)
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(ForcedTamlValueType::List, &[ForcedTamlValueType::Struct])
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::List(l) if l.is_empty() => visitor.visit_unit(),
+			TamlValue::List(l) => self.report_invalid_type("Expected unit (`()`)."),
+
+			TamlValue::Map(m) if m.is_empty() => visitor.visit_unit(),
+			TamlValue::Map(l) => self.report_invalid_type("Expected unit struct."),
+
+			TamlValue::Decoded(_)
+			| TamlValue::String(_)
+			| TamlValue::EnumVariant { .. }
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_) => unreachable!(),
+		}
+		.report_for(self)
 	}
 
-	fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+	fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
 	where
 		V: de::Visitor<'de>,
 	{
-		self.deserialize_struct(name, &[], visitor)
+		OVERRIDE.insert_if_none(ForcedTamlValueType::Struct);
+		self.deserialize_unit(visitor)
 	}
 
 	fn deserialize_newtype_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
