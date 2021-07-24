@@ -56,7 +56,7 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th scope=row>u8, i8, u16, i16, u32, i32, i64, u64, i128, u128<br>(any, in that order)</th>
+//!     <th scope=row>u8, i8, u16, i16, u32, i32, u64, i64, u128, i128<br>(any, in that order)</th>
 //!     <td colspan=7>TODO</td>
 //! </tr>
 //! <tr>
@@ -67,8 +67,8 @@
 //!     <th scope=row>char</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td>single-codepoint identifier of unit variant</td>
-//!     <td>single-digit positive integer</td>
+//!     <td>single-codepoint identifier only</td>
+//!     <td>single digit</td>
 //!     <td style="border: none"></td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>single-codepoint</td>
 //!     <td style="border: none"></td>
@@ -77,7 +77,7 @@
 //!     <th scope=row>str, string<br>(any)</th>
 //!     <td style="border: none"></td>
 //!     <td>full literal</td>
-//!     <td>identifier of unit variant</td>
+//!     <td>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>unquoted and unescaped</td>
@@ -87,7 +87,7 @@
 //!     <th scope=row>bytes, bytes_buf<br>(any)</th>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>encoded</td>
 //!     <td style="border: none"></td>
-//!     <td>identifier of unit variant in UTF-8</td>
+//!     <td>identifier only, in UTF-8</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td>unquoted and unescaped in UTF-8</td>
@@ -175,7 +175,7 @@
 //!     <th scope=row>identifier</th>
 //!     <td style="border: none"></td>
 //!     <td>full literal</td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier of unit variant</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
 //!     <td>unquoted and unescaped</td>
