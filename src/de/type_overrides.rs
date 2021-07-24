@@ -12,7 +12,7 @@
 //!
 //! # Serde/TAML compatibility table:
 //! 
-//! Defaults are highlighted in <span style="background: green; color: white">green</span><span style="display: inline-block; width: 0; height: 0; overflow: hidden"> and prefixed with "(default)"</span>.
+//! Defaults are highlighted in <span style="background: green; color: white; border-color: white">green</span><span style="display: inline-block; width: 0; height: 0; overflow: hidden"> and prefixed with "(default)"</span>.
 //!
 //! <table>
 //! <thead>
@@ -36,10 +36,10 @@
 //!     <td colspan=7>(restricting to one default cell below, in a row marked with "(any)")</td>
 //! </tr>
 //! <tr>
-//!     <th>bool<br>(any, with priority)</th>
+//!     <th>bool<br>(any)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>true</code>, <code>false</code></td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>true</code>, <code>false</code></td>
 //!     <td><code>1</code>, <code>0</code></td>
 //!     <td style="border: none"></td>
 //!     <td><code>"true"</code>, <code>"false"</code></td>
@@ -60,7 +60,7 @@
 //!     <td>single-codepoint identifier of unit variant</td>
 //!     <td>single-digit positive integer</td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>single-codepoint</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>single-codepoint</td>
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
@@ -70,12 +70,12 @@
 //!     <td>identifier of unit variant</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>unquoted and unescaped</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>unquoted and unescaped</td>
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>bytes, bytes_buf<br>(any)</th>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>encoded</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>encoded</td>
 //!     <td style="border: none"></td>
 //!     <td>identifier of unit variant in UTF-8</td>
 //!     <td style="border: none"></td>
@@ -93,7 +93,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>()</code></td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>()</code></td>
 //!     <td style="border: none"></td>
 //!     <td>no fields only</td>
 //! </tr>
@@ -105,7 +105,7 @@
 //!     <td style="border: none"></td>
 //!     <td><code>()</code></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>no fields only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>no fields only</td>
 //! </tr>
 //! <tr>
 //!     <th>newtype_struct</th>
@@ -117,7 +117,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any list</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any list</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //! </tr>
@@ -127,7 +127,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact length only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact length only</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //! </tr>
@@ -139,7 +139,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any struct</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any struct</td>
 //! </tr>
 //! <tr>
 //!     <th>struct</th>
@@ -149,13 +149,13 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only</td>
 //! </tr>
 //! <tr>
-//!     <th>enum<br>(any)</th>
+//!     <th>enum<br>(any, unless bool-compatible)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant¹</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant¹</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -165,7 +165,7 @@
 //!     <th>identifier</th>
 //!     <td style="border: none"></td>
 //!     <td>full literal</td>
-//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier of unit variant</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier of unit variant</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
 //!     <td>unquoted and unescaped</td>
