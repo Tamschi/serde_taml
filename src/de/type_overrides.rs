@@ -229,28 +229,6 @@ impl AssertAcceptableAndUnwrapOrDefault<ForcedTamlValueType> for Option<ForcedTa
 	}
 }
 
-/// Overrides TAML value type restrictions to expect a string.
-///
-/// # Errors
-///
-/// Iff `T::deserialize(deserializer)` errors.
-///
-/// # Delayed Panics
-///
-/// Only the following can be overridden to deserialize from strings:
-///
-/// - Strings
-///
-/// In all other cases, a panic will occur during deserialization.
-pub fn from_string<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-where
-	D: de::Deserializer<'de>,
-	T: de::Deserialize<'de>,
-{
-	OVERRIDE.set(ForcedTamlValueType::String);
-	T::deserialize(deserializer)
-}
-
 /// Overrides TAML value type restrictions to expect a data literal.
 ///
 /// # Errors
@@ -261,7 +239,7 @@ where
 ///
 /// Only the following can be overridden to deserialize from data literals:
 ///
-/// - Bytes
+/// - TODO
 ///
 /// In all other cases, a panic will occur during deserialization.
 pub fn from_data_literal<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -283,8 +261,7 @@ where
 ///
 /// Only the following can be overridden to deserialize from decimals:
 ///
-/// - Strings
-/// - Decimals
+/// - TODO
 ///
 /// In all other cases, a panic will occur during deserialization.
 pub fn from_decimal<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -293,5 +270,115 @@ where
 	T: de::Deserialize<'de>,
 {
 	OVERRIDE.set(ForcedTamlValueType::Decimal);
+	T::deserialize(deserializer)
+}
+
+/// Overrides TAML value type restrictions to expect an enum variant.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from enum variants:
+///
+/// - TODO
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_enum_variant<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::EnumVariant);
+	T::deserialize(deserializer)
+}
+
+/// Overrides TAML value type restrictions to expect an integer.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from integers:
+///
+/// - TODO
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_integer<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::Integer);
+	T::deserialize(deserializer)
+}
+
+/// Overrides TAML value type restrictions to expect a list.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from lists:
+///
+/// - TODO
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_list<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::List);
+	T::deserialize(deserializer)
+}
+
+/// Overrides TAML value type restrictions to expect a string.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from strings:
+///
+/// - TODO
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_string<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::String);
+	T::deserialize(deserializer)
+}
+
+/// Overrides TAML value type restrictions to expect a struct.
+///
+/// # Errors
+///
+/// Iff `T::deserialize(deserializer)` errors.
+///
+/// # Delayed Panics
+///
+/// Only the following can be overridden to deserialize from structs:
+///
+/// - TODO
+///
+/// In all other cases, a panic will occur during deserialization.
+pub fn from_struct<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+	D: de::Deserializer<'de>,
+	T: de::Deserialize<'de>,
+{
+	OVERRIDE.set(ForcedTamlValueType::Struct);
 	T::deserialize(deserializer)
 }
