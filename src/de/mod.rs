@@ -836,7 +836,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		// Options are flattened; that there's this `Deserializer` instance at all already means there is a value here.
+		// Options are flattened; that this `Deserializer` instance exists at all already means there is a value here.
 		// Similarly, overrides aren't reset here and will be used for the next layer of deserialisation instead.
 		visitor.visit_some(&mut self.by_ref()).report_for(self)
 	}
@@ -859,6 +859,8 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
+		// Newtypes are flattened.
+		// Similarly, overrides aren't reset here and will be used for the next layer of deserialisation instead.
 		visitor
 			.visit_newtype_struct(&mut self.by_ref())
 			.report_for(self)
@@ -868,12 +870,20 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	where
 		V: de::Visitor<'de>,
 	{
-		match &self.data.value {
-			TamlValue::List(l) => visitor
-				.visit_seq(ListAccess::new(self.by_ref(), l))
-				.report_for(self),
-			_ => self.report_invalid_type("Expected list (`(…)`)."),
+		match OVERRIDE
+			.take()
+			.assert_acceptable_and_unwrap(ForcedTamlValueType::List, &[])
+			.pick(&self.data.value, &self.data.span, self.reporter)?
+		{
+			TamlValue::List(l) => visitor.visit_seq(ListAccess::new(self.by_ref(), l)),
+			TamlValue::Decoded(_)
+			| TamlValue::String(_)
+			| TamlValue::EnumVariant { .. }
+			| TamlValue::Integer(_)
+			| TamlValue::Float(_)
+			| TamlValue::Map(_) => unreachable!(),
 		}
+		.report_for(self)
 	}
 
 	fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
