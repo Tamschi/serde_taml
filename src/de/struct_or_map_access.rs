@@ -1,7 +1,7 @@
-use super::type_overrides::{Override, OVERRIDE};
 use super::{
-	key_deserializer::KeyDeserializer, Deserializer, Encoder, Error, ErrorKind, PositionImpl,
-	ReportAt, Result,
+	key_deserializer::KeyDeserializer,
+	type_overrides::{Override, OVERRIDE},
+	Deserializer, Encoder, Error, ErrorKind, PositionImpl, ReportAt, Result,
 };
 use either::Either;
 use joinery::JoinableIterator;
