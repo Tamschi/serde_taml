@@ -10,33 +10,43 @@
 //! >
 //! > A proper fix is planned, but can only be implemented on stable once trait specialisation lands.
 //!
-//! # Serde/TAML compatibility table:
-//! 
-//! Defaults are highlighted in <span style="background: green; color: white; border-color: white">green</span><span style="display: inline-block; width: 0; height: 0; overflow: hidden"> and prefixed with "(default)"</span>.
+//! # Serde/TAML compatibility table
 //!
 //! <table>
+//! <col>
+//! <colgroup span=7></colgroup>
+//! <caption style="text-align: start">
+//!     <p>
+//!     Defaults are highlighted in <span style="background: green; color: white; border-color: white">green</span><span style="display: inline-block; width: 0; height: 0; overflow: hidden"> and prefixed with "(default)"</span>.
+//!     Unsupported combinations are shown as empty space.
+//!     </p>
+//!     <p>
+//!         The leftmost column denotes methods in Serde's <code>de::Deserializer</code> trait while the rest of the table shows <a href=https://taml.schichler.dev/en/develop/grammar.html>TAML value types</a>
+//!         and their validity per Serde method.
+//!     </p>
+//! </caption>
 //! <thead>
 //! <tr>
-//!     <th rowspan=0>deserialize_…</th>
-//!     <th colspan=7>TAML</th>
+//!     <th rowspan=0 scope=col>deserialize_…</th>
+//!     <th colspan=7 scope=colgroup>TAML</th>
 //! </tr>
 //! <tr>
-//!     <th>data literal</th>
-//!     <th>decimal</th>
-//!     <th>enum variant</th>
-//!     <th>integer</th>
-//!     <th>list</th>
-//!     <th>string</th>
-//!     <th>struct</th>
+//!     <th scope=col>data literal</th>
+//!     <th scope=col>decimal</th>
+//!     <th scope=col>enum variant</th>
+//!     <th scope=col>integer</th>
+//!     <th scope=col>list</th>
+//!     <th scope=col>string</th>
+//!     <th scope=col>struct</th>
 //! </tr>
 //! </thead>
 //! <tbody>
 //! <tr>
-//!     <th>any</th>
+//!     <th scope=row>any</th>
 //!     <td colspan=7>(restricting to one default cell below, in a row marked with "(any)")</td>
 //! </tr>
 //! <tr>
-//!     <th>bool<br>(any)</th>
+//!     <th scope=row>bool<br>(any)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>true</code>, <code>false</code></td>
@@ -46,15 +56,15 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>u8, i8, u16, i16, u32, i32, i64, u64, i128, u128<br>(any, in that order)</th>
+//!     <th scope=row>u8, i8, u16, i16, u32, i32, i64, u64, i128, u128<br>(any, in that order)</th>
 //!     <td colspan=7>TODO</td>
 //! </tr>
 //! <tr>
-//!     <th>f32, f64<br>(any, always as f64)</th>
+//!     <th scope=row>f32, f64<br>(any, always as f64)</th>
 //!     <td colspan=7>TODO</td>
 //! </tr>
 //! <tr>
-//!     <th>char</th>
+//!     <th scope=row>char</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td>single-codepoint identifier of unit variant</td>
@@ -64,7 +74,7 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>str, string<br>(any)</th>
+//!     <th scope=row>str, string<br>(any)</th>
 //!     <td style="border: none"></td>
 //!     <td>full literal</td>
 //!     <td>identifier of unit variant</td>
@@ -74,7 +84,7 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>bytes, bytes_buf<br>(any)</th>
+//!     <th scope=row>bytes, bytes_buf<br>(any)</th>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>encoded</td>
 //!     <td style="border: none"></td>
 //!     <td>identifier of unit variant in UTF-8</td>
@@ -84,11 +94,11 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>option</th>
+//!     <th scope=row>option</th>
 //!     <td colspan=7>(transparent)</td>
 //! </tr>
 //! <tr>
-//!     <th>unit</th>
+//!     <th scope=row>unit</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -98,7 +108,7 @@
 //!     <td>no fields only</td>
 //! </tr>
 //! <tr>
-//!     <th>unit_struct</th>
+//!     <th scope=row>unit_struct</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -108,11 +118,11 @@
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>no fields only</td>
 //! </tr>
 //! <tr>
-//!     <th>newtype_struct</th>
+//!     <th scope=row>newtype_struct</th>
 //!     <td colspan=7>(transparent)</td>
 //! </tr>
 //! <tr>
-//!     <th>seq<br>(any)</th>
+//!     <th scope=row>seq<br>(any)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -122,7 +132,7 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>tuple, tuple_struct</th>
+//!     <th scope=row>tuple, tuple_struct</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -132,7 +142,7 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>map<br>(any)</th>
+//!     <th scope=row>map<br>(any)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -142,7 +152,7 @@
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any struct</td>
 //! </tr>
 //! <tr>
-//!     <th>struct</th>
+//!     <th scope=row>struct</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -152,7 +162,7 @@
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only</td>
 //! </tr>
 //! <tr>
-//!     <th>enum<br>(any, unless bool-compatible)</th>
+//!     <th scope=row>enum<br>(any, unless bool-compatible)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant¹</td>
@@ -162,7 +172,7 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>identifier</th>
+//!     <th scope=row>identifier</th>
 //!     <td style="border: none"></td>
 //!     <td>full literal</td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier of unit variant</td>
@@ -172,8 +182,8 @@
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
-//!     <th>ignored_any</th>
-//!     <td colspan=7>(restricting, but only by TAML value type)</td>
+//!     <th scope=row>ignored_any</th>
+//!     <td colspan=7>(restricting to TAML value type; data literals are <em>not</em> validated)</td>
 //! </tr>
 //! </tbody>
 //! </table>
