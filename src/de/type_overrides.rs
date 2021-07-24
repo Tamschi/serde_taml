@@ -1,7 +1,7 @@
 //! TAML type overrides affect only the expected TAML representation of a value,
 //! but **not** how the [`super::Deserializer`] interacts with Serde
 //! (beyond delayed panics on encountering incompatibilities).
-//! 
+//!
 //! > **Warning:**
 //! >
 //! > I had to use a (thread-local) side channel here.
@@ -9,9 +9,11 @@
 //! > but there may be issues if you jump between two deserializers.
 //! >
 //! > A proper fix is planned, but can only be implemented on stable once trait specialisation lands.
+//!
+//! # Serde/TAML compatibility table:
 //! 
-//! Serde/TAML compatibility table:
-//! 
+//! Defaults are highlighted in <span style="background: green; color: white">green</span><span style="display: inline-block; width: 0; height: 0; overflow: hidden"> and prefixed with "(default)"</span>.
+//!
 //! <table>
 //! <thead>
 //! <tr>
@@ -35,12 +37,13 @@
 //! </tr>
 //! <tr>
 //!     <th>bool<br>(any, with priority)</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default) <code>true</code>, <code>false</code></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>true</code>, <code>false</code></td>
 //!     <td><code>1</code>, <code>0</code></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
 //!     <td><code>"true"</code>, <code>"false"</code></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>u8, i8, u16, i16, u32, i32, i64, u64, i128, u128<br>(any, in that order)</th>
@@ -52,30 +55,33 @@
 //! </tr>
 //! <tr>
 //!     <th>char</th>
-//!     <td></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //!     <td>single-codepoint identifier of unit variant</td>
 //!     <td>single-digit positive integer</td>
-//!     <td></td>
-//!     <td>(default) single-codepoint</td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>single-codepoint</td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>str, string<br>(any)</th>
-//!     <td></td>
+//!     <td style="border: none"></td>
 //!     <td>full literal</td>
 //!     <td>identifier of unit variant</td>
 //!     <td>full literal</td>
-//!     <td></td>
-//!     <td>(default) unquoted and unescaped</td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>unquoted and unescaped</td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>bytes, bytes_buf<br>(any)</th>
-//!     <td>(default) encoded</td>
-//!     <td></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>encoded</td>
+//!     <td style="border: none"></td>
 //!     <td>identifier of unit variant in UTF-8</td>
-//!     <td></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //!     <td>unquoted and unescaped in UTF-8</td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>option</th>
@@ -83,23 +89,23 @@
 //! </tr>
 //! <tr>
 //!     <th>unit</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default) <code>()</code></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span><code>()</code></td>
+//!     <td style="border: none"></td>
 //!     <td>no fields only</td>
 //! </tr>
 //! <tr>
 //!     <th>unit_struct</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //!     <td><code>()</code></td>
-//!     <td></td>
-//!     <td>(default) no fields only</td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>no fields only</td>
 //! </tr>
 //! <tr>
 //!     <th>newtype_struct</th>
@@ -107,63 +113,63 @@
 //! </tr>
 //! <tr>
 //!     <th>seq<br>(any)</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default)</td>
-//!     <td></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any list</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>tuple, tuple_struct</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default) (exact length)</td>
-//!     <td></td>
-//!     <td></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact length only</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>map<br>(any)</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default)</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any struct</td>
 //! </tr>
 //! <tr>
 //!     <th>struct</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default) (exact fields)</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only</td>
 //! </tr>
 //! <tr>
-//!     <th>enum<br>(any¹)</th>
-//!     <td></td>
-//!     <td></td>
-//!     <td>(default)</td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
-//!     <td></td>
+//!     <th>enum<br>(any)</th>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant¹</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>identifier</th>
-//!     <td></td>
+//!     <td style="border: none"></td>
 //!     <td>full literal</td>
-//!     <td>(default) identifier of unit variant</td>
+//!     <td style="background: green; color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier of unit variant</td>
 //!     <td>full literal</td>
-//!     <td></td>
+//!     <td style="border: none"></td>
 //!     <td>unquoted and unescaped</td>
-//!     <td></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th>ignored_any</th>
@@ -171,8 +177,8 @@
 //! </tr>
 //! </tbody>
 //! </table>
-//! 
-//! ¹ Use the `"serde-object-assist"` feature to predict enum variants.
+//!
+//! ¹ Use the `"serde-object-assist"` feature to predict enum variants, if necessary.
 
 
 use crate::de::ErrorKind;

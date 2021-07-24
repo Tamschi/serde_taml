@@ -859,10 +859,10 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
 			TamlValue::List(l) if l.is_empty() => visitor.visit_unit(),
-			TamlValue::List(l) => self.report_invalid_type("Expected unit (`()`)."),
+			TamlValue::List(_) => self.report_invalid_type("Expected unit (`()`)."),
 
 			TamlValue::Map(m) if m.is_empty() => visitor.visit_unit(),
-			TamlValue::Map(l) => self.report_invalid_type("Expected unit struct."),
+			TamlValue::Map(_) => self.report_invalid_type("Expected unit struct."),
 
 			TamlValue::Decoded(_)
 			| TamlValue::String(_)
