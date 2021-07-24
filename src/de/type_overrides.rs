@@ -70,7 +70,7 @@
 //! </tr>
 //! <tr>
 //!     <th>bytes, bytes_buf<br>(any)</th>
-//!     <td>(default) parsed</td>
+//!     <td>(default) encoded</td>
 //!     <td></td>
 //!     <td>identifier of unit variant in UTF-8</td>
 //!     <td></td>
@@ -89,7 +89,7 @@
 //!     <td></td>
 //!     <td>(default) <code>()</code></td>
 //!     <td></td>
-//!     <td>(no fields)</td>
+//!     <td>no fields only</td>
 //! </tr>
 //! <tr>
 //!     <th>unit_struct</th>
@@ -99,7 +99,7 @@
 //!     <td></td>
 //!     <td><code>()</code></td>
 //!     <td></td>
-//!     <td>(default) (no fields)</td>
+//!     <td>(default) no fields only</td>
 //! </tr>
 //! <tr>
 //!     <th>newtype_struct</th>
