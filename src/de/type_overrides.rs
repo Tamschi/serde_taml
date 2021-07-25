@@ -76,7 +76,7 @@
 //! <tr>
 //!     <th scope=row>str, string<br>(any)</th>
 //!     <td style="border: none"></td>
-//!     <td>literal without trailing zeroes</td>
+//!     <td>literal without trailing zeroes¹</td>
 //!     <td>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
@@ -159,13 +159,13 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only²</td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>enum<br>(any, unless bool-compatible)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant¹</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant³</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -174,7 +174,7 @@
 //! <tr>
 //!     <th scope=row>identifier</th>
 //!     <td style="border: none"></td>
-//!     <td>literal without trailing zeroes</td>
+//!     <td>literal without trailing zeroes¹</td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
@@ -188,8 +188,11 @@
 //! </tbody>
 //! </table>
 //!
-//! ¹ Use the `"serde-object-assist"` feature to predict enum variants, if necessary.
-
+//! ¹ Except for one directly following the decimal point, of course, since that is required by TAML.
+//!
+//! ² A field called `taml::extra_fields` is treated specially, absorbing any otherwise unrecognised fields as nested TAML struct.
+//!
+//! ³ Use the `"serde-object-assist"` feature to predict enum variants, if necessary.
 
 use crate::de::ErrorKind;
 use serde::de;
