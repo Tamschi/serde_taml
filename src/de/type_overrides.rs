@@ -76,7 +76,7 @@
 //! <tr>
 //!     <th scope=row>str, string<br>(any)</th>
 //!     <td style="border: none"></td>
-//!     <td>full literal</td>
+//!     <td>literal without trailing zeroes</td>
 //!     <td>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
@@ -174,7 +174,7 @@
 //! <tr>
 //!     <th scope=row>identifier</th>
 //!     <td style="border: none"></td>
-//!     <td>full literal</td>
+//!     <td>literal without trailing zeroes</td>
 //!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
