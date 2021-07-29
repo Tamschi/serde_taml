@@ -130,14 +130,14 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 												message = message
 													+ " `" + field
 													.replace('`', "\\`")
-													.as_str() + "`,"
+													.as_str() + "`,";
 											}
 										}
 										if listed_any {
 											message.pop();
 											message.push('.');
 										} else {
-											message += "(None)"
+											message += "(None)";
 										}
 										message.pipe(Cow::Owned)
 									},
@@ -145,7 +145,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 									DiagnosticLabelPriority::Auxiliary,
 								),
 							],
-						})
+						});
 					}
 					fail_from_extra_fields = found_extra_fields;
 					if fail_from_extra_fields {

@@ -236,9 +236,9 @@ impl Override for LocalKey<Cell<Option<ForcedTamlValueType>>> {
 	fn insert_if_none(&'static self, new_default: ForcedTamlValueType) {
 		self.with(|this| {
 			if this.get().is_none() {
-				this.set(new_default.into())
+				this.set(new_default.into());
 			}
-		})
+		});
 	}
 }
 

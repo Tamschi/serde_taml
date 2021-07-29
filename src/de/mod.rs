@@ -370,13 +370,13 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 										listed_any = true;
 										message = message
 											+ " `" + variant.replace('`', "\\`").as_str()
-											+ "`,"
+											+ "`,";
 									}
 									if listed_any {
 										message.pop();
 										message.push('.');
 									} else {
-										message += "(None)"
+										message += "(None)";
 									}
 									message.pipe(Cow::Owned)
 								},
@@ -404,13 +404,14 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 									for field in expected {
 										listed_any = true;
 										message = message
-											+ " `" + field.replace('`', "\\`").as_str() + "`,"
+											+ " `" + field.replace('`', "\\`").as_str()
+											+ "`,";
 									}
 									if listed_any {
 										message.pop();
 										message.push('.');
 									} else {
-										message += "(None)"
+										message += "(None)";
 									}
 									message.pipe(Cow::Owned)
 								},
