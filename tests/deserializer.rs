@@ -41,7 +41,7 @@ fn deserializer() {
 		r#true: bool,
 
 		#[serde(with = "serde_bytes")]
-		decoded: Vec<u8>,
+		data_literal: Vec<u8>,
 	}
 
 	#[derive(Debug, Deserialize, PartialEq)]
@@ -110,7 +110,7 @@ fn deserializer() {
 		false: false
 		true: true
 
-		decoded: <UTF-8:Hello!>
+		data_literal: <UTF-8:Hello!>
 	";
 
 	assert_eq!(
@@ -205,7 +205,7 @@ fn deserializer() {
 			r#false: false,
 			r#true: true,
 
-			decoded: "Hello!".into()
+			data_literal: "Hello!".into()
 		}
 	);
 }

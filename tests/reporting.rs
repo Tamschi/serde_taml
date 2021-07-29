@@ -22,7 +22,7 @@ fn unknown_field_none_accepted() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::UnknownField,
+			type_: DiagnosticType::UnknownField,
 			labels: vec![
 				DiagnosticLabel::new(
 					"Unknown field `key`.",
@@ -50,7 +50,7 @@ fn unknown_fields_none_accepted() {
 		diagnostics.as_slice(),
 		&[
 			tamlDiagnostic {
-				r#type: DiagnosticType::UnknownField,
+				type_: DiagnosticType::UnknownField,
 				labels: vec![
 					DiagnosticLabel::new(
 						"Unknown field `key`.",
@@ -65,7 +65,7 @@ fn unknown_fields_none_accepted() {
 				]
 			},
 			tamlDiagnostic {
-				r#type: DiagnosticType::UnknownField,
+				type_: DiagnosticType::UnknownField,
 				labels: vec![
 					DiagnosticLabel::new(
 						"Unknown field `another`.",
@@ -104,7 +104,7 @@ fn expected_other_fields() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::UnknownField,
+			type_: DiagnosticType::UnknownField,
 			labels: vec![
 				DiagnosticLabel::new(
 					"Unknown field `key`.",
@@ -132,7 +132,7 @@ key: "value"
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::UnknownField,
+			type_: DiagnosticType::UnknownField,
 			labels: vec![
 				DiagnosticLabel::new(
 					"Unknown field `key`.",
@@ -166,7 +166,7 @@ fn expect_i8() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
 				"Expected i8.",
 				4..11,
@@ -185,7 +185,7 @@ fn expect_string() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
 				r#"Expected string (`"…"`)."#,
 				8..9,
@@ -204,7 +204,7 @@ fn expect_f32() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
 				"Expected f32.",
 				5..20,
@@ -223,7 +223,7 @@ fn decimal_hint_1() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![
 				DiagnosticLabel::new("Expected f32.", 5..6, DiagnosticLabelPriority::Primary,),
 				DiagnosticLabel::new("Hint: Try `1.0`.", 5..6, DiagnosticLabelPriority::Auxiliary,)
@@ -241,7 +241,7 @@ fn decimal_hint_2() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![
 				DiagnosticLabel::new("Expected f64.", 5..6, DiagnosticLabelPriority::Primary,),
 				DiagnosticLabel::new("Hint: Try `2.0`.", 5..6, DiagnosticLabelPriority::Auxiliary,)
@@ -321,7 +321,7 @@ fn missing_fields() {
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::MissingField,
+			type_: DiagnosticType::MissingField,
 			labels: vec![
 				DiagnosticLabel::new(
 					"Missing field `missing_field`.",

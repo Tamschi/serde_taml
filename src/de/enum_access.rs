@@ -135,7 +135,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 	) -> Result<V> {
 		let enum_span = self.data.span.clone();
 		self.reporter.report_with(|| Diagnostic {
-			r#type: DiagnosticType::CustomErrorFromVisitor,
+			type_: DiagnosticType::CustomErrorFromVisitor,
 			labels: vec![
 				DiagnosticLabel::new(msg, enum_span, DiagnosticLabelPriority::Primary),
 				DiagnosticLabel::new(

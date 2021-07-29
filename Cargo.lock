@@ -541,9 +541,9 @@ dependencies = [
 
 [[package]]
 name = "smartstring"
-version = "0.2.7"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29620fe111ceaba7a50fd806b5f44c1ef44a697a739f6677a4464c7ea8685997"
+checksum = "31aa6a31c0c2b21327ce875f7e8952322acfcfd0c27569a6e18a647281352c9b"
 dependencies = [
  "static_assertions",
 ]
@@ -567,9 +567,9 @@ dependencies = [
 
 [[package]]
 name = "taml"
-version = "0.0.9"
+version = "0.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b529e6bddc7742e0f290dc6699e2e0b2ba583b17018ff885de0ba9a500c599c4"
+checksum = "13b685d4da548e51c7bc95ccb5ab2806cc80bf3c734d64a0caacf8483dd790d7"
 dependencies = [
  "cervine",
  "debugless-unwrap",

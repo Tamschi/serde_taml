@@ -13,7 +13,7 @@ use taml::{
 		Reporter as diagReporter,
 	},
 	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
-	Decoded, Token,
+	DataLiteral, Token,
 };
 use tap::{Conv, Pipe};
 
@@ -36,8 +36,8 @@ pub type Encoder = dyn Fn(&str) -> core::result::Result<Cow<[u8]>, Vec<EncodeErr
 ///
 /// These diagnostics are intended for human consumption and **their processing within `serde_taml` is not versioned**.
 pub struct EncodeError {
-	/// The half-open range of the input [`str`] to label, indexed by bytes.
-	pub input_span: Range<usize>,
+	/// The half-open range of the unescaped input [`str`] to label, indexed by bytes.
+	pub unescaped_input_span: Range<usize>,
 	/// A text with which to label `input_span`. This should ideally be a detailed and self-contained error message.
 	pub message: Cow<'static, str>,
 }
@@ -309,7 +309,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 				let span = deserializer.data.span.clone();
 				deserializer.reporter.report_with(|| match e.kind {
 					ErrorKind::SerdeCustom { msg } => Diagnostic {
-						r#type: DiagnosticType::CustomErrorFromVisitor,
+						type_: DiagnosticType::CustomErrorFromVisitor,
 						labels: vec![DiagnosticLabel::new(
 							msg,
 							span,
@@ -320,7 +320,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						unexpected,
 						expected,
 					} => Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							format!("Expected {} but found {}.", expected, unexpected),
 							span,
@@ -331,7 +331,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						unexpected,
 						expected,
 					} => Diagnostic {
-						r#type: DiagnosticType::InvalidValue,
+						type_: DiagnosticType::InvalidValue,
 						labels: vec![DiagnosticLabel::new(
 							format!("Expected {} but found {}.", expected, unexpected),
 							span,
@@ -339,7 +339,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						)],
 					},
 					ErrorKind::SerdeInvalidLength { len, expected } => Diagnostic {
-						r#type: DiagnosticType::InvalidLength,
+						type_: DiagnosticType::InvalidLength,
 						labels: vec![DiagnosticLabel::new(
 							format!(
 								"Expected {} but found something with length {}.",
@@ -350,7 +350,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						)],
 					},
 					ErrorKind::SerdeUnknownVariant { variant, expected } => Diagnostic {
-						r#type: DiagnosticType::UnknownVariant,
+						type_: DiagnosticType::UnknownVariant,
 						labels: vec![
 							DiagnosticLabel::new(
 								format!("Unknown variant: `{}`.", variant.replace('`', "\\`")),
@@ -386,7 +386,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						],
 					},
 					ErrorKind::SerdeUnknownField { field, expected } => Diagnostic {
-						r#type: DiagnosticType::UnknownField,
+						type_: DiagnosticType::UnknownField,
 						labels: vec![
 							DiagnosticLabel::new(
 								format!("Unknown field: `{}`.", field.replace('`', "\\`")),
@@ -420,7 +420,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						],
 					},
 					ErrorKind::SerdeMissingField { field } => Diagnostic {
-						r#type: DiagnosticType::MissingField,
+						type_: DiagnosticType::MissingField,
 						labels: vec![DiagnosticLabel::new(
 							format!("Missing field: `{}`.", field.replace('`', "\\`")),
 							span,
@@ -431,7 +431,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						// TAML cannot actually contain duplicate fields after parsing
 						// (since that raises an error and the data structure does not support it),
 						// but a `serde::de::Deserialize`-implementation can still generate this error.
-						r#type: DiagnosticType::CustomErrorFromVisitor,
+						type_: DiagnosticType::CustomErrorFromVisitor,
 						labels: vec![DiagnosticLabel::new(
 							format!("Duplicate field: `{}`.", field.replace('`', "\\`")),
 							span,
@@ -439,7 +439,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 						)],
 					},
 					ErrorKind::InvalidValue { msg } => Diagnostic {
-						r#type: DiagnosticType::InvalidValue,
+						type_: DiagnosticType::InvalidValue,
 						labels: vec![DiagnosticLabel::new(
 							msg,
 							span,
@@ -466,7 +466,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 			Err(err) => {
 				if !err.is_reported() {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::CustomErrorFromVisitor,
+						type_: DiagnosticType::CustomErrorFromVisitor,
 						labels: vec![DiagnosticLabel::new(
 							err.to_string(),
 							span,
@@ -491,7 +491,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportIn
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
 		let span = self.data.span.clone();
 		self.reporter.report_with(move || Diagnostic {
-			r#type: DiagnosticType::InvalidValue,
+			type_: DiagnosticType::InvalidValue,
 			labels: vec![DiagnosticLabel::new(
 				msg,
 				span,
@@ -504,7 +504,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportIn
 	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V> {
 		let span = self.data.span.clone();
 		self.reporter.report_with(move || Diagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
 				msg,
 				span,
@@ -517,7 +517,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportIn
 	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V> {
 		let span = self.data.span.clone();
 		self.reporter.report_with(move || Diagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
 				msg.to_string(),
 				span,
@@ -561,7 +561,7 @@ macro_rules! parsed_float {
 					TamlValue::Integer(i) => {
 						let span = self.data.span.clone().pipe(Some);
 						self.reporter.report_with(|| Diagnostic {
-							r#type: DiagnosticType::InvalidType,
+							type_: DiagnosticType::InvalidType,
 							labels: vec![
 								DiagnosticLabel::new(
 									concat!("Expected ", stringify!($Type), "."),
@@ -607,8 +607,8 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			&self.data.value
 		} {
 			TamlValue::String(s) => visitor.visit_str(s),
-			TamlValue::Decoded(decoded) => {
-				visitor.visit_decoded(decoded, self.encoders, self.reporter)
+			TamlValue::DataLiteral(data_literal) => {
+				visitor.visit_data_literal(data_literal, self.encoders, self.reporter)
 			}
 			TamlValue::Integer(i) => if let Ok(i) = i.parse() {
 				visitor.visit_u8(i)
@@ -636,7 +636,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				)
 			}
 			.report_for(self),
-			TamlValue::Float(f) => visitor
+			TamlValue::Decimal(f) => visitor
 				.visit_f64(
 					f.parse()
 						.map_err(|_| Error::invalid_value(concat!("Failed to parse float.")))
@@ -704,17 +704,17 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				self.report_invalid_type("Expected boolean unit variant `true` or `false`.")
 			}
 
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::List(_)
 			| TamlValue::Map(_)
-			| TamlValue::Float(_) => unreachable!(),
+			| TamlValue::Decimal(_) => unreachable!(),
 		}
 		.report_for(self)
 	}
 
 	parsed!(Integer => i8, i16, i32, i64, i128);
 	parsed!(Integer => u8, u16, u32, u64, u128);
-	parsed_float!(Float => f32, f64);
+	parsed_float!(Decimal => f32, f64);
 
 	fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
 	where
@@ -748,10 +748,10 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				self.report_invalid_value("Expected positive single digit integer.")
 			}
 
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::List(_)
 			| TamlValue::Map(_)
-			| TamlValue::Float(_) => unreachable!(),
+			| TamlValue::Decimal(_) => unreachable!(),
 		}
 		.report_for(self)
 	}
@@ -785,9 +785,9 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				self.report_invalid_value("Expected plain identifier.")
 			}
 
-			TamlValue::Integer(str) | TamlValue::Float(str) => visitor.visit_borrowed_str(str),
+			TamlValue::Integer(str) | TamlValue::Decimal(str) => visitor.visit_borrowed_str(str),
 
-			TamlValue::Decoded(_) | TamlValue::List(_) | TamlValue::Map(_) => unreachable!(),
+			TamlValue::DataLiteral(_) | TamlValue::List(_) | TamlValue::Map(_) => unreachable!(),
 		}
 		.report_for(self)
 	}
@@ -811,8 +811,8 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			)
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
-			TamlValue::Decoded(decoded) => {
-				visitor.visit_decoded(decoded, self.encoders, self.reporter)
+			TamlValue::DataLiteral(data_literal) => {
+				visitor.visit_data_literal(data_literal, self.encoders, self.reporter)
 			}
 
 			TamlValue::String(str)
@@ -826,7 +826,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 
 			TamlValue::EnumVariant { .. }
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_)
+			| TamlValue::Decimal(_)
 			| TamlValue::List(_)
 			| TamlValue::Map(_) => unreachable!(),
 		}
@@ -864,11 +864,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			TamlValue::Map(m) if m.is_empty() => visitor.visit_unit(),
 			TamlValue::Map(_) => self.report_invalid_type("Expected unit struct."),
 
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::String(_)
 			| TamlValue::EnumVariant { .. }
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_) => unreachable!(),
+			| TamlValue::Decimal(_) => unreachable!(),
 		}
 		.report_for(self)
 	}
@@ -902,11 +902,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
 			TamlValue::List(l) => visitor.visit_seq(ListAccess::new(self.by_ref(), l)),
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::String(_)
 			| TamlValue::EnumVariant { .. }
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_)
+			| TamlValue::Decimal(_)
 			| TamlValue::Map(_) => unreachable!(),
 		}
 		.report_for(self)
@@ -930,11 +930,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				l.len(),
 			)),
 
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::String(_)
 			| TamlValue::EnumVariant { .. }
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_)
+			| TamlValue::Decimal(_)
 			| TamlValue::Map(_) => unreachable!(),
 		}
 		.report_for(self)
@@ -969,11 +969,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				None,
 			)),
 
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::String(_)
 			| TamlValue::EnumVariant { .. }
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_)
+			| TamlValue::Decimal(_)
 			| TamlValue::List(_) => unreachable!(),
 		}
 		.report_for(self)
@@ -1001,11 +1001,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 				fields.into(),
 			)),
 
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::String(_)
 			| TamlValue::EnumVariant { .. }
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_)
+			| TamlValue::Decimal(_)
 			| TamlValue::List(_) => unreachable!(),
 		}
 		.report_for(self)
@@ -1026,11 +1026,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
 			TamlValue::EnumVariant { .. } => visitor.visit_enum(EnumAndVariantAccess(self)),
-			TamlValue::Decoded(_)
+			TamlValue::DataLiteral(_)
 			| TamlValue::String(_)
 			| TamlValue::Map(_)
 			| TamlValue::Integer(_)
-			| TamlValue::Float(_)
+			| TamlValue::Decimal(_)
 			| TamlValue::List(_) => unreachable!(),
 		}
 		.report_for(self)
@@ -1060,24 +1060,24 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 	}
 }
 
-trait VisitDecoded<'de> {
+trait VisitDataLiteral<'de> {
 	type Value;
-	fn visit_decoded<Position: PositionImpl>(
+	fn visit_data_literal<Position: PositionImpl>(
 		self,
-		decoded: &Decoded<Position>,
+		data_literal: &DataLiteral<Position>,
 		encoders: &[(&str, &Encoder)],
 		reporter: &mut impl diagReporter<Position>,
 	) -> Result<Self::Value>;
 }
-impl<'de, V> VisitDecoded<'de> for V
+impl<'de, V> VisitDataLiteral<'de> for V
 where
 	V: de::Visitor<'de>,
 {
 	type Value = V::Value;
 
-	fn visit_decoded<Position: PositionImpl>(
+	fn visit_data_literal<Position: PositionImpl>(
 		self,
-		decoded: &Decoded<Position>,
+		data_literal: &DataLiteral<Position>,
 		encoders: &[(&str, &Encoder)],
 		reporter: &mut impl diagReporter<Position>,
 	) -> Result<Self::Value> {
@@ -1085,80 +1085,87 @@ where
 		encoders
 			.iter()
 			.find_map(|(encoding, decoder)| {
-				(*encoding == decoded.encoding.as_ref()).then(|| *decoder)
+				(*encoding == data_literal.encoding.as_ref()).then(|| *decoder)
 			})
-			.map(|decoder| match decoder(decoded.decoded.as_ref()) {
-				Ok(Cow::Borrowed(slice)) => self.visit_bytes(slice),
-				Ok(Cow::Owned(vec)) => self.visit_byte_buf(vec),
-				Err(errors) => {
-					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::EncodeFailed,
-						labels: errors
-							.into_iter()
-							.map(
-								|EncodeError {
-								     input_span: decoded_span,
-								     message,
-								 }| {
-									DiagnosticLabel::new(
-										message,
-										{
-											let escape_shift = decoded.decoded
-												[..decoded_span.start]
-												.chars()
-												.filter(|c| *c == '>')
-												.count();
-											let start = decoded_span.start + escape_shift;
-											let end = decoded_span.end
-												+ escape_shift + decoded.decoded
-												[decoded_span]
-												.chars()
-												.filter(|c| *c == '>')
-												.count();
-											decoded.decoded_span.start.offset_range(start..end)
-										},
-										DiagnosticLabelPriority::Primary,
-									)
-								},
-							)
-							.chain(iter::once(DiagnosticLabel::new(
-								"Encoding specified here.",
-								decoded.encoding_span.clone(),
-								DiagnosticLabelPriority::Auxiliary,
-							)))
-							.chain(iter::once(DiagnosticLabel::new(
-								format!(
-									"Hint: Available encodings are: {}.",
-									if encoders.is_empty() {
-										"(None)".to_string()
-									} else {
-										format!(
-											"`{}`",
-											encoders
-												.iter()
-												.map(|(encoding, _)| encoding.replace('`', "\\`"))
-												.join_with("`, `")
+			.map(
+				|decoder| match decoder(data_literal.unencoded_data.as_ref()) {
+					Ok(Cow::Borrowed(slice)) => self.visit_bytes(slice),
+					Ok(Cow::Owned(vec)) => self.visit_byte_buf(vec),
+					Err(errors) => {
+						reporter.report_with(|| Diagnostic {
+							type_: DiagnosticType::EncodeFailed,
+							labels: errors
+								.into_iter()
+								.map(
+									|EncodeError {
+									     unescaped_input_span,
+									     message,
+									 }| {
+										DiagnosticLabel::new(
+											message,
+											{
+												let escape_shift = data_literal.unencoded_data
+													[..unescaped_input_span.start]
+													.chars()
+													.filter(|c| *c == '>')
+													.count();
+												let start =
+													unescaped_input_span.start + escape_shift;
+												let end = unescaped_input_span.end
+													+ escape_shift + data_literal
+													.unencoded_data[unescaped_input_span]
+													.chars()
+													.filter(|c| *c == '>')
+													.count();
+												data_literal
+													.unencoded_data_span
+													.start
+													.offset_range(start..end)
+											},
+											DiagnosticLabelPriority::Primary,
 										)
-									}
-								),
-								None,
-								DiagnosticLabelPriority::Auxiliary,
-							)))
-							.collect(),
-					});
-					Err(ErrorKind::Reported.into())
-				}
-			})
+									},
+								)
+								.chain(iter::once(DiagnosticLabel::new(
+									"Encoding specified here.",
+									data_literal.encoding_span.clone(),
+									DiagnosticLabelPriority::Auxiliary,
+								)))
+								.chain(iter::once(DiagnosticLabel::new(
+									format!(
+										"Hint: Available encodings are: {}.",
+										if encoders.is_empty() {
+											"(None)".to_string()
+										} else {
+											format!(
+												"`{}`",
+												encoders
+													.iter()
+													.map(|(encoding, _)| encoding
+														.replace('`', "\\`"))
+													.join_with("`, `")
+											)
+										}
+									),
+									None,
+									DiagnosticLabelPriority::Auxiliary,
+								)))
+								.collect(),
+						});
+						Err(ErrorKind::Reported.into())
+					}
+				},
+			)
 			.unwrap_or_else(|| {
 				reporter.report_with(|| Diagnostic {
-					r#type: DiagnosticType::UnknownEncoding,
+					type_: DiagnosticType::UnknownEncoding,
 					labels: vec![
 						DiagnosticLabel::new(
 							format!(
 								"Unrecognized encoding `{}`.",
-								decoded.encoding.replace('`', "\\`")
+								data_literal.encoding.replace('`', "\\`")
 							),
-							decoded.encoding_span.clone(),
+							data_literal.encoding_span.clone(),
 							DiagnosticLabelPriority::Primary,
 						),
 						DiagnosticLabel::new(

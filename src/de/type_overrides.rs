@@ -269,7 +269,7 @@ impl ForcedTamlValueType {
 				v @ TamlValue::String(_) => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							r#"Expected string (`"…"`)."#,
 							span.clone(),
@@ -281,10 +281,10 @@ impl ForcedTamlValueType {
 			},
 
 			ForcedTamlValueType::DataLiteral => match value {
-				v @ TamlValue::Decoded(_) => Ok(v),
+				v @ TamlValue::DataLiteral(_) => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							"Expected data literal (`<…;…>`).",
 							span.clone(),
@@ -299,7 +299,7 @@ impl ForcedTamlValueType {
 				v @ TamlValue::Integer(_) => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							"Expected integer.",
 							span.clone(),
@@ -314,7 +314,7 @@ impl ForcedTamlValueType {
 				TamlValue::Integer(i) => {
 					let span = span.clone().pipe(Some);
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![
 							DiagnosticLabel::new(
 								"Expected decimal.",
@@ -330,10 +330,10 @@ impl ForcedTamlValueType {
 					});
 					Err(ErrorKind::Reported.into())
 				}
-				v @ TamlValue::Float(_) => Ok(v),
+				v @ TamlValue::Decimal(_) => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							"Expected decimal.",
 							span.clone(),
@@ -348,7 +348,7 @@ impl ForcedTamlValueType {
 				v @ TamlValue::EnumVariant { .. } => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							r#"Expected enum variant (`key` or `key(…)`)."#,
 							span.clone(),
@@ -363,7 +363,7 @@ impl ForcedTamlValueType {
 				v @ TamlValue::List(_) => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							"Expected list (`(…)`).",
 							span.clone(),
@@ -378,7 +378,7 @@ impl ForcedTamlValueType {
 				v @ TamlValue::Map(_) => Ok(v),
 				_ => {
 					reporter.report_with(|| Diagnostic {
-						r#type: DiagnosticType::InvalidType,
+						type_: DiagnosticType::InvalidType,
 						labels: vec![DiagnosticLabel::new(
 							"Expected struct.",
 							span.clone(),

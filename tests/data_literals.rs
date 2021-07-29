@@ -11,7 +11,7 @@ use tap::{Conv, Pipe};
 type tamlDiagnostic = taml::diagnostics::Diagnostic<usize>;
 
 #[derive(Debug, Deserialize)]
-struct Decoded {
+struct DataLiteral {
 	#[serde(with = "serde_bytes")]
 	data: Vec<u8>,
 }
@@ -20,20 +20,20 @@ struct Decoded {
 fn unsupported_characters() {
 	let text = "data: <Windows-1252:Bonjour ! До свидания!>\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<Decoded, _>(
+	from_taml_str::<DataLiteral, _>(
 		text,
 		&mut diagnostics,
 		&[
-			("Windows-1252", &|decoded| {
+			("Windows-1252", &|text| {
 				// See <ftp://ftp.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT>.
 				// `#` (0x23) is used as spacer.
 				const INSERT_0X80: &str = "€#‚ƒ„…†‡ˆ‰Š‹Œ#Ž##‘’“”•–—˜™š›œ#žŸ";
 
-				let mut decoded_chars = decoded.char_indices();
+				let mut chars = text.char_indices();
 				#[allow(clippy::never_loop)]
 				let mut error_start = 'success: loop {
 					let mut encoded = vec![];
-					for (i, d) in decoded_chars.by_ref() {
+					for (i, d) in chars.by_ref() {
 						encoded.push(match d {
 							'\0'..='\u{7F}' | '\u{A0}'..='\u{FF}' => u8(d.conv::<u32>()).unwrap(),
 							_ => {
@@ -53,15 +53,15 @@ fn unsupported_characters() {
 				.pipe(Some);
 
 				let mut errors = vec![];
-				for (i, d) in decoded_chars.chain(iter::once((decoded.len(), 'a'))) {
+				for (i, d) in chars.chain(iter::once((text.len(), 'a'))) {
 					if matches!(d, '\0'..='\u{7F}' | '\u{A0}'..='\u{FF}') || INSERT_0X80.contains(d)
 					{
 						error_start.take().into_iter().for_each(|error_start| {
 							errors.push(EncodeError {
-								input_span: error_start..i,
+								unescaped_input_span: error_start..i,
 								message: Cow::Owned(format!(
 									"Unsupported character(s): `{}`.",
-									&decoded[error_start..i]
+									&text[error_start..i]
 								)),
 							})
 						})
@@ -71,14 +71,14 @@ fn unsupported_characters() {
 				}
 				Err(errors)
 			}),
-			("UTF-8", &|decoded| Ok(Cow::Borrowed(decoded.as_bytes()))),
+			("UTF-8", &|text| Ok(Cow::Borrowed(text.as_bytes()))),
 		],
 	)
 	.unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::EncodeFailed,
+			type_: DiagnosticType::EncodeFailed,
 			labels: vec![
 				DiagnosticLabel::new(
 					"Unsupported character(s): `До`.",
@@ -110,16 +110,16 @@ fn unsupported_characters() {
 fn unknown_encoding() {
 	let text = "data: <UTF-7:Bonjour ! До свидания!>\n";
 	let mut diagnostics = vec![];
-	from_taml_str::<Decoded, _>(
+	from_taml_str::<DataLiteral, _>(
 		text,
 		&mut diagnostics,
-		&[("UTF-8", &|decoded| Ok(Cow::Borrowed(decoded.as_bytes())))],
+		&[("UTF-8", &|text| Ok(Cow::Borrowed(text.as_bytes())))],
 	)
 	.unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::UnknownEncoding,
+			type_: DiagnosticType::UnknownEncoding,
 			labels: vec![
 				DiagnosticLabel::new(
 					"Unrecognized encoding `UTF-7`.",

@@ -41,3 +41,5 @@ pub mod readme {
 pub mod de;
 
 pub use taml;
+
+pub use taml::validate;

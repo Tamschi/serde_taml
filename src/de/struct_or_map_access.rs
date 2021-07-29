@@ -107,7 +107,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 					for (k, _) in extra {
 						found_extra_fields = true;
 						reporter.report_with(|| Diagnostic {
-							r#type: DiagnosticType::UnknownField,
+							type_: DiagnosticType::UnknownField,
 							labels: vec![
 								DiagnosticLabel::new(
 									format!("Unknown field `{}`.", k.name),
@@ -212,7 +212,7 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::MapA
 						|err| {
 							if !matches!(err.kind, ErrorKind::Reported) {
 								self.reporter.report_with(|| Diagnostic {
-									r#type: DiagnosticType::MissingField,
+									type_: DiagnosticType::MissingField,
 									labels: vec![
 										DiagnosticLabel::new(
 											format!("Missing field `{}`.", key.replace('`', "\\`")),
