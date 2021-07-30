@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.2
 
-TODO: Date
+2021-07-30
 
 This is an overall rework of the library, which means just about all of the API changed.
 

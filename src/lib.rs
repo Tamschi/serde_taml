@@ -80,7 +80,7 @@
 //!
 //! See [`de::type_overrides`] for the compatibility table and standard mappings.
 
-#![doc(html_root_url = "https://docs.rs/serde_taml/0.0.1")]
+#![doc(html_root_url = "https://docs.rs/serde_taml/0.0.2")]
 #![warn(clippy::pedantic)]
 #![allow(clippy::if_not_else, clippy::too_many_lines)]
 #![warn(missing_docs)]
