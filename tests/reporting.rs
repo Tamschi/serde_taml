@@ -4,7 +4,7 @@ use codemap_diagnostic::{ColorConfig, Diagnostic, Emitter, Level, SpanLabel, Spa
 use educe::*;
 use indexmap::{indexmap, IndexMap};
 use serde::{de::IgnoredAny, Deserialize};
-use serde_taml::de::from_str;
+use serde_taml::de::from_taml_str;
 use std::io::stdout;
 use taml::diagnostics::{DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType};
 
@@ -15,49 +15,70 @@ type tamlDiagnostic = taml::diagnostics::Diagnostic<usize>;
 struct NoFields {}
 
 #[test]
-fn no_fields() {
+fn unknown_field_none_accepted() {
 	let text = "key: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_str::<NoFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<NoFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::UnknownField,
-			labels: vec![DiagnosticLabel::new(
-				"Expected no fields.",
-				0..3,
-				DiagnosticLabelPriority::Primary,
-			)]
+			type_: DiagnosticType::UnknownField,
+			labels: vec![
+				DiagnosticLabel::new(
+					"Unknown field `key`.",
+					0..3,
+					DiagnosticLabelPriority::Primary
+				),
+				DiagnosticLabel::new(
+					"Hint: This struct does not accept any fields.",
+					0..0,
+					DiagnosticLabelPriority::Auxiliary,
+				)
+			]
 		}]
 	);
 	report(text, diagnostics)
 }
 
 #[test]
-fn no_fields_multi() {
+fn unknown_fields_none_accepted() {
 	let text = "key: \"value\"\n\
     another: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_str::<NoFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<NoFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[
 			tamlDiagnostic {
-				r#type: DiagnosticType::UnknownField,
-				labels: vec![DiagnosticLabel::new(
-					"Expected no fields.",
-					0..3,
-					DiagnosticLabelPriority::Primary,
-				)]
+				type_: DiagnosticType::UnknownField,
+				labels: vec![
+					DiagnosticLabel::new(
+						"Unknown field `key`.",
+						0..3,
+						DiagnosticLabelPriority::Primary
+					),
+					DiagnosticLabel::new(
+						"Hint: This struct does not accept any fields.",
+						0..0,
+						DiagnosticLabelPriority::Auxiliary,
+					),
+				]
 			},
 			tamlDiagnostic {
-				r#type: DiagnosticType::UnknownField,
-				labels: vec![DiagnosticLabel::new(
-					"Expected no fields.",
-					13..20,
-					DiagnosticLabelPriority::Primary,
-				)]
-			},
+				type_: DiagnosticType::UnknownField,
+				labels: vec![
+					DiagnosticLabel::new(
+						"Unknown field `another`.",
+						13..20,
+						DiagnosticLabelPriority::Primary
+					),
+					DiagnosticLabel::new(
+						"Hint: This struct does not accept any fields.",
+						0..0,
+						DiagnosticLabelPriority::Auxiliary,
+					),
+				]
+			}
 		]
 	);
 	report(text, diagnostics)
@@ -66,29 +87,64 @@ fn no_fields_multi() {
 #[derive(Debug, PartialEq, Deserialize)]
 struct ThreeFields {
 	#[serde(default)]
-	field_1: Option<i8>,
+	field_1: i8,
 
 	#[serde(default)]
-	field_2: Option<String>,
+	field_2: String,
 
 	#[serde(default)]
-	field_3: Option<f32>,
+	field_3: f32,
 }
 
 #[test]
 fn expected_other_fields() {
 	let text = "key: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_str::<ThreeFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<ThreeFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::UnknownField,
-			labels: vec![DiagnosticLabel::new(
-				"Expected `field_1`, `field_2` or `field_3`.",
-				0..3,
-				DiagnosticLabelPriority::Primary,
-			)]
+			type_: DiagnosticType::UnknownField,
+			labels: vec![
+				DiagnosticLabel::new(
+					"Unknown field `key`.",
+					0..3,
+					DiagnosticLabelPriority::Primary
+				),
+				DiagnosticLabel::new(
+					"Hint: The following additional fields are accepted here: `field_1`, `field_2`, `field_3`.",
+					0..0,
+					DiagnosticLabelPriority::Auxiliary,
+				)
+			]
+		}]
+	);
+	report(text, diagnostics)
+}
+
+#[test]
+fn expected_additional_fields() {
+	let text = r#"field_2: ""
+key: "value"
+"#;
+	let mut diagnostics = vec![];
+	from_taml_str::<ThreeFields, _>(text, &mut diagnostics, &[]).unwrap_err();
+	assert_eq!(
+		diagnostics.as_slice(),
+		&[tamlDiagnostic {
+			type_: DiagnosticType::UnknownField,
+			labels: vec![
+				DiagnosticLabel::new(
+					"Unknown field `key`.",
+					12..15,
+					DiagnosticLabelPriority::Primary
+				),
+				DiagnosticLabel::new(
+					"Hint: The following additional fields are accepted here: `field_1`, `field_3`.",
+					0..0,
+					DiagnosticLabelPriority::Auxiliary,
+				)
+			]
 		}]
 	);
 	report(text, diagnostics)
@@ -96,27 +152,23 @@ fn expected_other_fields() {
 
 #[derive(Debug, PartialEq, Deserialize)]
 struct TypedFields {
-	#[serde(default)]
 	i8: Option<i8>,
-
-	#[serde(default)]
 	string: Option<String>,
-
-	#[serde(default)]
 	f32: Option<f32>,
+	f64: Option<f64>,
 }
 
 #[test]
 fn expect_i8() {
 	let text = "i8: \"value\"\n";
 	let mut diagnostics = vec![];
-	from_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected i8 here.",
+				"Expected integer.",
 				4..11,
 				DiagnosticLabelPriority::Primary,
 			)]
@@ -129,13 +181,13 @@ fn expect_i8() {
 fn expect_string() {
 	let text = "string: 0\n";
 	let mut diagnostics = vec![];
-	from_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected a string here.",
+				r#"Expected string (`"…"`)."#,
 				8..9,
 				DiagnosticLabelPriority::Primary,
 			)]
@@ -148,16 +200,52 @@ fn expect_string() {
 fn expect_f32() {
 	let text = "f32: (1, 2, 3, 4, 5)\n";
 	let mut diagnostics = vec![];
-	from_str::<TypedFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::InvalidType,
+			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected f32 here.",
+				"Expected decimal.",
 				5..20,
 				DiagnosticLabelPriority::Primary,
 			)]
+		}]
+	);
+	report(text, diagnostics)
+}
+
+#[test]
+fn decimal_hint_1() {
+	let text = "f32: 1\n";
+	let mut diagnostics = vec![];
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
+	assert_eq!(
+		diagnostics.as_slice(),
+		&[tamlDiagnostic {
+			type_: DiagnosticType::InvalidType,
+			labels: vec![
+				DiagnosticLabel::new("Expected decimal.", 5..6, DiagnosticLabelPriority::Primary),
+				DiagnosticLabel::new("Hint: Try `1.0`.", 5..6, DiagnosticLabelPriority::Auxiliary),
+			]
+		}]
+	);
+	report(text, diagnostics)
+}
+
+#[test]
+fn decimal_hint_2() {
+	let text = "f64: 2\n";
+	let mut diagnostics = vec![];
+	from_taml_str::<TypedFields, _>(text, &mut diagnostics, &[]).unwrap_err();
+	assert_eq!(
+		diagnostics.as_slice(),
+		&[tamlDiagnostic {
+			type_: DiagnosticType::InvalidType,
+			labels: vec![
+				DiagnosticLabel::new("Expected decimal.", 5..6, DiagnosticLabelPriority::Primary),
+				DiagnosticLabel::new("Hint: Try `2.0`.", 5..6, DiagnosticLabelPriority::Auxiliary),
+			]
 		}]
 	);
 	report(text, diagnostics)
@@ -177,15 +265,15 @@ fn extra_fields() {
     unknown: \"It is unknowable.\"\n";
 	let mut diagnostics = vec![];
 	assert_eq!(
-		from_str::<ExtraFields, _>(text, &mut diagnostics),
-		Ok(ExtraFields {
+		from_taml_str::<ExtraFields, _>(text, &mut diagnostics, &[])
+			.map_err(|err| eprintln!("{}; diagnostics: {:#?}", err, diagnostics))
+			.unwrap(),
+		ExtraFields {
 			known: "It is known.".to_string(),
 			extra_fields: indexmap! {
 				"unknown".to_string() => "It is unknowable.".to_string()
 			},
-		}),
-		"diagnostics: {:?}",
-		diagnostics
+		},
 	);
 	assert_eq!(diagnostics.as_slice(), &[]);
 	report(text, diagnostics);
@@ -207,11 +295,11 @@ fn ignored_extra_fields() {
     unknown: \"It is unknowable.\"\n";
 	let mut diagnostics = vec![];
 	assert_eq!(
-		from_str::<IgnoredExtraFields, _>(text, &mut diagnostics),
-		Ok(IgnoredExtraFields {
+		from_taml_str::<IgnoredExtraFields, _>(text, &mut diagnostics, &[]).unwrap(),
+		IgnoredExtraFields {
 			known: "It is known.".to_string(),
 			extra_fields: IgnoredAny,
-		}),
+		},
 		"diagnostics: {:?}",
 		diagnostics
 	);
@@ -229,16 +317,23 @@ struct MissingFields {
 fn missing_fields() {
 	let text = "\n";
 	let mut diagnostics = vec![];
-	from_str::<MissingFields, _>(text, &mut diagnostics).unwrap_err();
+	from_taml_str::<MissingFields, _>(text, &mut diagnostics, &[]).unwrap_err();
 	assert_eq!(
 		diagnostics.as_slice(),
 		&[tamlDiagnostic {
-			r#type: DiagnosticType::MissingField,
-			labels: vec![DiagnosticLabel::new(
-				"Missing field missing_field.",
-				0..0,
-				DiagnosticLabelPriority::Primary,
-			)]
+			type_: DiagnosticType::MissingField,
+			labels: vec![
+				DiagnosticLabel::new(
+					"Missing field `missing_field`.",
+					0..0,
+					DiagnosticLabelPriority::Primary,
+				),
+				DiagnosticLabel::new(
+					"Invalid type: Unexpected Option value, expected i8.",
+					None,
+					DiagnosticLabelPriority::Auxiliary,
+				)
+			]
 		}]
 	);
 	report(text, diagnostics);
