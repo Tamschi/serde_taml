@@ -57,11 +57,23 @@
 //! </tr>
 //! <tr>
 //!     <th scope=row>u8, i8, u16, i16, u32, i32, u64, i64, u128, i128<br>(any, in that order)</th>
-//!     <td colspan=7>TODO</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span>any integer</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>f32, f64<br>(any, always as f64)</th>
-//!     <td colspan=7>TODO</td>
+//!     <td style="border: none"></td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default) </span>any decimal</td>
+//!     <td style="border: none"></td>
+//!     <td>any integer</td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
+//!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>char</th>

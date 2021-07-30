@@ -529,64 +529,59 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportIn
 	}
 }
 
-macro_rules! parsed {
-	($Variant:ident => $($Type:ident),*$(,)?) => {$(
+macro_rules! parsed_integer {
+	($($Type:ident),*$(,)?) => {$(
 		paste! {
 			fn [<deserialize_ $Type>]<V>(self, visitor: V) -> Result<V::Value>
 			where
 				V: de::Visitor<'de>,
 			{
-				match &self.data.value {
-					TamlValue::$Variant(v) => visitor
+				match OVERRIDE
+					.take()
+					.assert_acceptable_and_unwrap(ForcedTamlValueType::Integer, &[])
+					.pick(&self.data.value, &self.data.span, self.reporter)?
+				{
+					TamlValue::Integer(v) => visitor
 						.[<visit_ $Type>](
 							v.parse()
-								.map_err(|_| Error::invalid_value(concat!("Failed to parse ", stringify!($Type), ".")))
+								.map_err(|_| Error::invalid_value(concat!("Failed to parse integer as ", stringify!($Type), ".")))
 								.report_for(self)?,
-						)
-						.report_for(self),
-					_ => self.report_invalid_type(concat!("Expected ", stringify!($Type), ".")),
+						),
+					_ => unreachable!(),
 				}
+				.report_for(self)
 			}
 		}
 	)*};
 }
 
-macro_rules! parsed_float {
-	($Variant:ident => $($Type:ident),*$(,)?) => {$(
+macro_rules! parsed_decimal {
+	($($Type:ident),*$(,)?) => {$(
 		paste! {
 			fn [<deserialize_ $Type>]<V>(self, visitor: V) -> Result<V::Value>
 			where
 				V: de::Visitor<'de>,
 			{
-				match &self.data.value {
-					TamlValue::Integer(i) => {
-						let span = self.data.span.clone().pipe(Some);
-						self.reporter.report_with(|| Diagnostic {
-							type_: DiagnosticType::InvalidType,
-							labels: vec![
-								DiagnosticLabel::new(
-									concat!("Expected ", stringify!($Type), "."),
-									span.clone(),
-									DiagnosticLabelPriority::Primary,
-								),
-								DiagnosticLabel::new(
-									format!("Hint: Try `{}.0`.", i),
-									span,
-									DiagnosticLabelPriority::Auxiliary,
-								),
-							],
-						});
-						Err(ErrorKind::Reported.into())
-					}
-					TamlValue::$Variant(v) => visitor
+				match OVERRIDE
+					.take()
+					.assert_acceptable_and_unwrap(ForcedTamlValueType::Decimal, &[ForcedTamlValueType::Integer])
+					.pick(&self.data.value, &self.data.span, self.reporter)?
+				{
+					TamlValue::Decimal(v) => visitor
 						.[<visit_ $Type>](
 							v.parse()
-								.map_err(|_| Error::invalid_value(concat!("Failed to parse ", stringify!($Type), ".")))
+								.map_err(|_| Error::invalid_value(concat!("Failed to parse decimal as ", stringify!($Type), ".")))
 								.report_for(self)?,
-						)
-						.report_for(self),
-					_ => self.report_invalid_type(concat!("Expected ", stringify!($Type), ".")),
+						),
+					TamlValue::Integer(v) => visitor
+						.[<visit_ $Type>](
+							v.parse()
+								.map_err(|_| Error::invalid_value(concat!("Failed to parse integer as ", stringify!($Type), ".")))
+								.report_for(self)?,
+						),
+					_ => unreachable!(),
 				}
+				.report_for(self)
 			}
 		}
 	)*};
@@ -713,9 +708,9 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 		.report_for(self)
 	}
 
-	parsed!(Integer => i8, i16, i32, i64, i128);
-	parsed!(Integer => u8, u16, u32, u64, u128);
-	parsed_float!(Decimal => f32, f64);
+	parsed_integer!(i8, i16, i32, i64, i128);
+	parsed_integer!(u8, u16, u32, u64, u128);
+	parsed_decimal!(f32, f64);
 
 	fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
 	where

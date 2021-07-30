@@ -168,7 +168,7 @@ fn expect_i8() {
 		&[tamlDiagnostic {
 			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected i8.",
+				"Expected integer.",
 				4..11,
 				DiagnosticLabelPriority::Primary,
 			)]
@@ -206,7 +206,7 @@ fn expect_f32() {
 		&[tamlDiagnostic {
 			type_: DiagnosticType::InvalidType,
 			labels: vec![DiagnosticLabel::new(
-				"Expected f32.",
+				"Expected decimal.",
 				5..20,
 				DiagnosticLabelPriority::Primary,
 			)]
@@ -225,8 +225,8 @@ fn decimal_hint_1() {
 		&[tamlDiagnostic {
 			type_: DiagnosticType::InvalidType,
 			labels: vec![
-				DiagnosticLabel::new("Expected f32.", 5..6, DiagnosticLabelPriority::Primary,),
-				DiagnosticLabel::new("Hint: Try `1.0`.", 5..6, DiagnosticLabelPriority::Auxiliary,)
+				DiagnosticLabel::new("Expected decimal.", 5..6, DiagnosticLabelPriority::Primary),
+				DiagnosticLabel::new("Hint: Try `1.0`.", 5..6, DiagnosticLabelPriority::Auxiliary),
 			]
 		}]
 	);
@@ -243,8 +243,8 @@ fn decimal_hint_2() {
 		&[tamlDiagnostic {
 			type_: DiagnosticType::InvalidType,
 			labels: vec![
-				DiagnosticLabel::new("Expected f64.", 5..6, DiagnosticLabelPriority::Primary,),
-				DiagnosticLabel::new("Hint: Try `2.0`.", 5..6, DiagnosticLabelPriority::Auxiliary,)
+				DiagnosticLabel::new("Expected decimal.", 5..6, DiagnosticLabelPriority::Primary),
+				DiagnosticLabel::new("Hint: Try `2.0`.", 5..6, DiagnosticLabelPriority::Auxiliary),
 			]
 		}]
 	);
