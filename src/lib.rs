@@ -2,6 +2,14 @@
 //!
 //! For TAML syntax help, see the latter's documentation and <https://taml.schichler.dev>.
 //!
+//! # Features
+//!
+//! ## `"serde-object-assist"`
+//!
+//! Iff this features is enabled, `serde_taml` supports variant spying compatible with `serde-object@0.0.0-alpha.0`.
+//!
+//! > It's a bit of a hack, but you can deserialize unknown enums through the Serde API this way.
+//!
 //! # Expecting data literals
 //!
 //! Data literals are bytes towards Serde.

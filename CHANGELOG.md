@@ -8,7 +8,7 @@ TODO: Date
 
 This is an overall rework of the library, which means just about all of the API changed.
 
-The `"serde-object-assist"` feature is still available unchanged. (TODO)
+The `"serde-object-assist"` feature is still available unchanged.
 
 - **Breaking**:
   - Changed license to `MIT OR Apache-2.0`.

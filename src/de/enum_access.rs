@@ -14,6 +14,19 @@ use taml::{
 };
 use try_match::try_match;
 
+#[cfg(feature = "serde-object-assist")]
+use std::cell::Cell;
+
+thread_local! {
+	#[cfg(feature = "serde-object-assist")]
+	static CURRENT_ENUM_VARIANT: Cell<Option<serde_object::assistant::VariantKind>> = Cell::default();
+}
+
+#[cfg(feature = "serde-object-assist")]
+#[linkme::distributed_slice(serde_object::assistant::extra::ENUM_VARIANT_ASSISTS)]
+static ENUM_VARIANT_ASSIST: fn() -> Option<serde_object::assistant::VariantKind> =
+	|| CURRENT_ENUM_VARIANT.with(Cell::take);
+
 pub struct EnumAndVariantAccess<
 	'a,
 	'b,
@@ -34,6 +47,22 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 	{
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
+
+		#[cfg(feature = "serde-object-assist")]
+		CURRENT_ENUM_VARIANT.with(|cev| {
+			use serde_object::assistant::VariantKind;
+			use std::borrow::Cow;
+
+			cev.set(Some(match &variant.payload {
+				VariantPayload::Structured(map) => VariantKind::Struct(Cow::Owned(
+					map.keys().map(|key| key.name.to_string().into()).collect(),
+				)),
+				VariantPayload::Tuple(list) if list.len() == 1 => VariantKind::Newtype,
+				VariantPayload::Tuple(list) => VariantKind::Tuple(list.len()),
+				VariantPayload::Unit => VariantKind::Unit,
+			}));
+		});
+
 		seed.deserialize(KeyDeserializer {
 			key: variant.key.clone(),
 			reporter: self.0.reporter,
@@ -48,6 +77,9 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 	type Error = Error;
 
 	fn unit_variant(self) -> Result<()> {
+		#[cfg(feature = "serde-object-assist")]
+		CURRENT_ENUM_VARIANT.with(Cell::take);
+
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		match variant.payload {
@@ -62,6 +94,9 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 	where
 		T: de::DeserializeSeed<'de>,
 	{
+		#[cfg(feature = "serde-object-assist")]
+		CURRENT_ENUM_VARIANT.with(Cell::take);
+
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		seed.deserialize(&mut Deserializer {
@@ -83,6 +118,9 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 	where
 		V: de::Visitor<'de>,
 	{
+		#[cfg(feature = "serde-object-assist")]
+		CURRENT_ENUM_VARIANT.with(Cell::take);
+
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		match variant.payload {
@@ -99,6 +137,9 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 	where
 		V: de::Visitor<'de>,
 	{
+		#[cfg(feature = "serde-object-assist")]
+		CURRENT_ENUM_VARIANT.with(Cell::take);
+
 		let variant = try_match!(TamlValue::EnumVariant { key, payload } = &self.0.data.value)
 			.debugless_unwrap();
 		match variant.payload {
