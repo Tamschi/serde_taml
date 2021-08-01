@@ -26,18 +26,21 @@ cargo add serde_taml
 
 ## Example
 
+<!--
+  something like...:
+  precise_decimals: 6.2831853071795864769 (parse as Scientific)
+  `arbitrary names`: DirectEnumVariant("Support")
+  human_friendly_buffers: <ASCII:Great error reporting❕>
+  helpfully: "
+  selective\r
+  carriage\r
+  return\r
+  leniency\r
+  "\r // ← Only this one is legal.
+-->
+
 ```rust
 // TODO_EXAMPLE
-// something like...:
-// precise_decimals: 6.2831853071795864769 (parse as Scientific)
-// `arbitrary names`: DirectEnumVariant("Support")
-// human_friendly_buffers: <ASCII:Great error reporting❕>
-// helpfully: "
-// selective\r
-// carriage\r
-// return\r
-// leniency\r
-// "\r // ← Only this one is legal.
 ```
 
 ## License
