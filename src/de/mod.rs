@@ -13,7 +13,7 @@ use taml::{
 		Reporter as diagReporter,
 	},
 	parsing::{parse, IntoToken, Key, Taml, TamlValue, VariantPayload},
-	DataLiteral, Token,
+	DataLiteral, Position, Token,
 };
 use tap::{Conv, Pipe};
 
@@ -43,9 +43,9 @@ pub struct EncodeError {
 }
 
 /// A TAML [Serde](`serde`)-[`Deserializer`](`serde::Deserializer`) implementation.
-pub struct Deserializer<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
+pub struct Deserializer<'a, 'de, P: Position, Reporter: diagReporter<P>> {
 	/// The parsed TAML tree to deserialize further.
-	pub data: &'a Taml<'de, Position>,
+	pub data: &'a Taml<'de, P>,
 	/// A reporter for human-readable [`diagnostics`](`taml::diagnostics`).
 	///
 	/// Diagnostic output is not versioned! You can skip its generation entirely by passing `&mut ()`.
@@ -53,10 +53,8 @@ pub struct Deserializer<'a, 'de, Position: PositionImpl, Reporter: diagReporter<
 	/// A list of recognised encodings for data literals, as pairs of (unescaped) encoding identifier and [`Encoder`] references.
 	pub encoders: &'a [(&'a str, &'a Encoder)],
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
-	Deserializer<'a, 'de, Position, Reporter>
-{
-	fn by_ref(&mut self) -> Deserializer<'_, 'de, Position, Reporter> {
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> Deserializer<'a, 'de, P, Reporter> {
+	fn by_ref(&mut self) -> Deserializer<'_, 'de, P, Reporter> {
 		Deserializer {
 			reporter: self.reporter,
 			..*self
@@ -256,9 +254,9 @@ pub fn from_taml_str<'de, T: de::Deserialize<'de>, Reporter: diagReporter<usize>
 /// # Errors
 ///
 /// Iff `tokens` can't be parsed into a valid TAML document or does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
-pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
-	tokens: impl IntoIterator<Item = impl IntoToken<'de, Position>>,
-	reporter: &mut impl diagReporter<Position>,
+pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, P: Position>(
+	tokens: impl IntoIterator<Item = impl IntoToken<'de, P>>,
+	reporter: &mut impl diagReporter<P>,
 	encoders: &[(&str, &Encoder)],
 ) -> Result<T> {
 	let root = parse(tokens, reporter).map_err(|()| ErrorKind::Reported.conv::<Error>())?;
@@ -266,7 +264,7 @@ pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
 	from_taml_tree(
 		&Taml {
 			value: TamlValue::Map(root),
-			span: Position::default()..Position::default(),
+			span: P::default()..P::default(),
 		},
 		reporter,
 		encoders,
@@ -280,9 +278,9 @@ pub fn from_taml_tokens<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
 /// # Errors
 ///
 /// Iff `taml` does not structurally match `T`'s [`Deserialize`](`de::Deserialize`) implementation.
-pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
-	taml: &Taml<'de, Position>,
-	reporter: &mut impl diagReporter<Position>,
+pub fn from_taml_tree<'de, T: de::Deserialize<'de>, P: Position>(
+	taml: &Taml<'de, P>,
+	reporter: &mut impl diagReporter<P>,
 	encoders: &[(&str, &Encoder)],
 ) -> Result<T> {
 	OVERRIDE.take();
@@ -293,13 +291,13 @@ pub fn from_taml_tree<'de, T: de::Deserialize<'de>, Position: PositionImpl>(
 	})
 }
 
-trait ReportFor<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
-	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self;
+trait ReportFor<'a, 'de, P: Position, Reporter: diagReporter<P>> {
+	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, P, Reporter>) -> Self;
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
-	ReportFor<'a, 'de, Position, Reporter> for Result<V>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>, V> ReportFor<'a, 'de, P, Reporter>
+	for Result<V>
 {
-	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, Position, Reporter>) -> Self {
+	fn report_for(self, deserializer: &mut Deserializer<'a, 'de, P, Reporter>) -> Self {
 		match self {
 			Ok(ok) => Ok(ok),
 			Err(Error {
@@ -455,13 +453,13 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
 	}
 }
 
-trait ReportAt<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
-	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self;
+trait ReportAt<'a, 'de, P: Position, Reporter: diagReporter<P>> {
+	fn report_at(self, reporter: &mut Reporter, span: Range<P>) -> Self;
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>, V>
-	ReportAt<'a, 'de, Position, Reporter> for Result<V>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>, V> ReportAt<'a, 'de, P, Reporter>
+	for Result<V>
 {
-	fn report_at(self, reporter: &mut Reporter, span: Range<Position>) -> Self {
+	fn report_at(self, reporter: &mut Reporter, span: Range<P>) -> Self {
 		match self {
 			Ok(ok) => Ok(ok),
 			Err(err) => {
@@ -486,8 +484,8 @@ trait ReportInvalid {
 	fn report_invalid_type<V>(self, msg: &'static str) -> Result<V>;
 	fn report_invalid_type_owned<V>(self, msg: impl Display) -> Result<V>;
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> ReportInvalid
-	for &mut Deserializer<'a, 'de, Position, Reporter>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> ReportInvalid
+	for &mut Deserializer<'a, 'de, P, Reporter>
 {
 	fn report_invalid_value<V>(self, msg: &'static str) -> Result<V> {
 		let span = self.data.span.clone();
@@ -588,8 +586,8 @@ macro_rules! parsed_decimal {
 }
 
 #[allow(clippy::non_ascii_literal)]
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Deserializer<'de>
-	for &mut Deserializer<'a, 'de, Position, Reporter>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
+	for &mut Deserializer<'a, 'de, P, Reporter>
 {
 	type Error = Error;
 
@@ -1058,11 +1056,11 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Dese
 
 trait VisitDataLiteral<'de> {
 	type Value;
-	fn visit_data_literal<Position: PositionImpl>(
+	fn visit_data_literal<P: Position>(
 		self,
-		data_literal: &DataLiteral<Position>,
+		data_literal: &DataLiteral<P>,
 		encoders: &[(&str, &Encoder)],
-		reporter: &mut impl diagReporter<Position>,
+		reporter: &mut impl diagReporter<P>,
 	) -> Result<Self::Value>;
 }
 impl<'de, V> VisitDataLiteral<'de> for V
@@ -1071,11 +1069,11 @@ where
 {
 	type Value = V::Value;
 
-	fn visit_data_literal<Position: PositionImpl>(
+	fn visit_data_literal<P: Position>(
 		self,
-		data_literal: &DataLiteral<Position>,
+		data_literal: &DataLiteral<P>,
 		encoders: &[(&str, &Encoder)],
-		reporter: &mut impl diagReporter<Position>,
+		reporter: &mut impl diagReporter<P>,
 	) -> Result<Self::Value> {
 		#![allow(clippy::map_unwrap_or)] // Needed to borrow `reporter`.
 		encoders
@@ -1103,7 +1101,7 @@ where
 												let escape_shift = data_literal.unencoded_data
 													[..unescaped_input_span.start]
 													.chars()
-													.filter(|c| *c == '>')
+													.filter(|c| matches!(*c, '\\' | '>'  | '\r')) // For next TAML.
 													.count();
 												let start =
 													unescaped_input_span.start + escape_shift;
@@ -1111,7 +1109,7 @@ where
 													+ escape_shift + data_literal
 													.unencoded_data[unescaped_input_span]
 													.chars()
-													.filter(|c| *c == '>')
+													.filter(|c| matches!(*c, '\\' | '>'  | '\r')) // For next TAML.
 													.count();
 												data_literal
 													.unencoded_data_span
@@ -1186,24 +1184,5 @@ where
 				});
 				Err(ErrorKind::Reported.into())
 			})
-	}
-}
-
-/// Implemented by types usable as `Position` generic type parameter in this library.
-pub trait PositionImpl: Debug + Clone + Default + PartialEq {
-	/// Adds `self` to both limits of `local_range` and returns the result in [`Some`].  
-	/// If this operation does not make sense, [`None`] is returned instead.
-	fn offset_range(&self, local_range: Range<usize>) -> Option<Range<Self>>;
-}
-
-impl PositionImpl for usize {
-	fn offset_range(&self, local_range: Range<usize>) -> Option<Range<Self>> {
-		Some(self + local_range.start..self + local_range.end)
-	}
-}
-
-impl PositionImpl for () {
-	fn offset_range(&self, _local_range: Range<usize>) -> Option<Range<Self>> {
-		None
 	}
 }

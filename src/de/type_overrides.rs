@@ -82,7 +82,7 @@
 //!     <td>single-codepoint identifier only</td>
 //!     <td>single digit</td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>single-codepoint</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>single-codepoint</td>
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
@@ -92,12 +92,12 @@
 //!     <td>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>unquoted and unescaped</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>unquoted and unescaped</td>
 //!     <td style="border: none"></td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>bytes, bytes_buf<br>(any)</th>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>encoded</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>encoded</td>
 //!     <td style="border: none"></td>
 //!     <td>identifier only, in UTF-8</td>
 //!     <td style="border: none"></td>
@@ -127,7 +127,7 @@
 //!     <td style="border: none"></td>
 //!     <td><code>()</code></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>no fields only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>no fields only</td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>newtype_struct</th>
@@ -139,7 +139,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any list</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>any list</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //! </tr>
@@ -149,7 +149,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact length only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>exact length only</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //! </tr>
@@ -161,7 +161,7 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any struct</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>any struct</td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>struct</th>
@@ -171,13 +171,13 @@
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>exact fields only²</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>exact fields only²</td>
 //! </tr>
 //! <tr>
 //!     <th scope=row>enum<br>(any, unless bool-compatible)</th>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>any enum variant³</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>any enum variant³</td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
 //!     <td style="border: none"></td>
@@ -187,7 +187,7 @@
 //!     <th scope=row>identifier</th>
 //!     <td style="border: none"></td>
 //!     <td>literal without trailing zeroes¹</td>
-//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(d efault)</span>identifier only</td>
+//!     <td style="background: green; color: white; border-color: white"><span style="display: inline-block; width: 0; height: 0; overflow: hidden">(default)</span>identifier only</td>
 //!     <td>full literal</td>
 //!     <td style="border: none"></td>
 //!     <td>unquoted and unescaped</td>
@@ -206,6 +206,7 @@
 //!
 //! ³ Use the `"serde-object-assist"` feature to predict enum variants, if necessary.
 
+use super::Error;
 use crate::de::ErrorKind;
 use serde::de;
 use std::{cell::Cell, fmt::Display, ops::Range, thread::LocalKey};
@@ -215,10 +216,9 @@ use taml::{
 		Reporter as diagReporter,
 	},
 	parsing::TamlValue,
+	Position,
 };
 use tap::Pipe;
-
-use super::{Error, PositionImpl};
 
 thread_local! {
 	/// Sets a TAML data type override for the next value aside from options, which are transparent.
@@ -265,12 +265,12 @@ pub(super) enum ForcedTamlValueType {
 	Struct,
 }
 impl ForcedTamlValueType {
-	pub fn pick<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>(
+	pub fn pick<'a, 'de, P: Position, Reporter: diagReporter<P>>(
 		self,
-		value: &'a TamlValue<'de, Position>,
-		span: &Range<Position>,
+		value: &'a TamlValue<'de, P>,
+		span: &Range<P>,
 		reporter: &mut Reporter,
-	) -> Result<&'a TamlValue<'de, Position>, Error> {
+	) -> Result<&'a TamlValue<'de, P>, Error> {
 		#[allow(
 			clippy::match_same_arms,
 			clippy::non_ascii_literal,

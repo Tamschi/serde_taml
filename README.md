@@ -6,7 +6,7 @@
 
 ![Rust 1.53](https://img.shields.io/static/v1?logo=Rust&label=&message=1.53&color=grey)
 [![CI](https://github.com/Tamschi/serde_taml/workflows/CI/badge.svg?branch=unstable)](https://github.com/Tamschi/serde_taml/actions?query=workflow%3ACI+branch%3Aunstable)
-![Crates.io - License](https://img.shields.io/crates/l/serde_taml/0.0.2)
+![Crates.io - License](https://img.shields.io/crates/l/serde_taml/0.0.3)
 
 [![GitHub](https://img.shields.io/static/v1?logo=GitHub&label=&message=%20&color=grey)](https://github.com/Tamschi/serde_taml)
 [![open issues](https://img.shields.io/github/issues-raw/Tamschi/serde_taml)](https://github.com/Tamschi/serde_taml/issues)
@@ -25,6 +25,19 @@ cargo add serde_taml
 ```
 
 ## Example
+
+<!--
+  something like...:
+  precise_decimals: 6.2831853071795864769 (parse as Scientific)
+  `arbitrary names`: DirectEnumVariant("Support")
+  human_friendly_buffers: <ASCII:Great error reporting❕>
+  helpfully: "
+  selective\r
+  carriage\r
+  return\r
+  leniency\r
+  "\r // ← Only this one is legal.
+-->
 
 ```rust
 // TODO_EXAMPLE
