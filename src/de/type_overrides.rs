@@ -210,10 +210,14 @@ use super::Error;
 use crate::de::ErrorKind;
 use serde::de;
 use std::{cell::Cell, fmt::Display, ops::Range, thread::LocalKey};
-use taml::{Position, diagnostics::{
+use taml::{
+	diagnostics::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
 		Reporter as diagReporter,
-	}, parsing::TamlValue};
+	},
+	parsing::TamlValue,
+	Position,
+};
 use tap::Pipe;
 
 thread_local! {

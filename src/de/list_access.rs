@@ -1,6 +1,6 @@
 use super::{Deserializer, Error, ReportFor, Result};
 use serde::de;
-use taml::{Position, diagnostics::Reporter as diagReporter, parsing::Taml};
+use taml::{diagnostics::Reporter as diagReporter, parsing::Taml, Position};
 use tap::Pipe;
 
 #[allow(clippy::type_complexity)]
