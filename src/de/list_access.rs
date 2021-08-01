@@ -1,20 +1,15 @@
-use super::{Deserializer, Error, PositionImpl, ReportFor, Result};
+use super::{Deserializer, Error, ReportFor, Result};
 use serde::de;
-use taml::{diagnostics::Reporter as diagReporter, parsing::Taml};
+use taml::{Position, diagnostics::Reporter as diagReporter, parsing::Taml};
 use tap::Pipe;
 
 #[allow(clippy::type_complexity)]
-pub struct ListAccess<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
-	deserializer: Deserializer<'a, 'de, Position, Reporter>,
-	entries: Box<dyn 'a + Iterator<Item = &'a Taml<'de, Position>>>,
+pub struct ListAccess<'a, 'de, P: Position, Reporter: diagReporter<P>> {
+	deserializer: Deserializer<'a, 'de, P, Reporter>,
+	entries: Box<dyn 'a + Iterator<Item = &'a Taml<'de, P>>>,
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
-	ListAccess<'a, 'de, Position, Reporter>
-{
-	pub fn new(
-		deserializer: Deserializer<'a, 'de, Position, Reporter>,
-		list: &'a [Taml<'de, Position>],
-	) -> Self {
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> ListAccess<'a, 'de, P, Reporter> {
+	pub fn new(deserializer: Deserializer<'a, 'de, P, Reporter>, list: &'a [Taml<'de, P>]) -> Self {
 		Self {
 			deserializer,
 			entries: list.iter().pipe(Box::new),
@@ -22,8 +17,8 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 	}
 }
 
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::SeqAccess<'de>
-	for ListAccess<'a, 'de, Position, Reporter>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::SeqAccess<'de>
+	for ListAccess<'a, 'de, P, Reporter>
 {
 	type Error = Error;
 

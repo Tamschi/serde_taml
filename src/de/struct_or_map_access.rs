@@ -1,7 +1,7 @@
 use super::{
 	key_deserializer::KeyDeserializer,
 	type_overrides::{Override, OVERRIDE},
-	Deserializer, Encoder, Error, ErrorKind, PositionImpl, ReportAt, Result,
+	Deserializer, Encoder, Error, ErrorKind, ReportAt, Result,
 };
 use either::Either;
 use joinery::JoinableIterator;
@@ -13,36 +13,28 @@ use taml::{
 		Reporter as diagReporter,
 	},
 	parsing::{Key, Map, Taml, TamlValue},
+	Position,
 };
 use tap::Pipe;
 
 const EXTRA_FIELDS: &str = "taml::extra_fields";
 
 #[allow(clippy::type_complexity)]
-pub struct StructOrMapAccess<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
+pub struct StructOrMapAccess<'a, 'de, P: Position, Reporter: diagReporter<P>> {
 	reporter: &'a mut Reporter,
-	span: Range<Position>,
+	span: Range<P>,
 	encoders: &'a [(&'a str, &'a Encoder)],
-	entries: Box<
-		dyn 'a
-			+ Iterator<
-				Item = (
-					Key<'de, Position>,
-					Either<Cow<'a, Taml<'de, Position>>, &'static str>,
-				),
-			>,
-	>,
-	next_value: Option<Either<Cow<'a, Taml<'de, Position>>, &'static str>>,
+	entries:
+		Box<dyn 'a + Iterator<Item = (Key<'de, P>, Either<Cow<'a, Taml<'de, P>>, &'static str>)>>,
+	next_value: Option<Either<Cow<'a, Taml<'de, P>>, &'static str>>,
 	fail_from_extra_fields: bool,
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
-	StructOrMapAccess<'a, 'de, Position, Reporter>
-{
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> StructOrMapAccess<'a, 'de, P, Reporter> {
 	pub fn new(
 		reporter: &'a mut Reporter,
-		span: Range<Position>,
+		span: Range<P>,
 		encoders: &'a [(&'a str, &'a Encoder)],
-		map: &'a Map<'de, Position>,
+		map: &'a Map<'de, P>,
 		struct_fields: Option<&'static [&'static str]>,
 	) -> Self {
 		let is_struct = struct_fields.is_some();
@@ -164,8 +156,8 @@ impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
 	}
 }
 
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::MapAccess<'de>
-	for StructOrMapAccess<'a, 'de, Position, Reporter>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::MapAccess<'de>
+	for StructOrMapAccess<'a, 'de, P, Reporter>
 {
 	type Error = Error;
 

@@ -1,6 +1,4 @@
-use super::{
-	key_deserializer::KeyDeserializer, Deserializer, Error, PositionImpl, ReportFor, Result,
-};
+use super::{key_deserializer::KeyDeserializer, Deserializer, Error, ReportFor, Result};
 use crate::de::{list_access::ListAccess, struct_or_map_access::StructOrMapAccess, ErrorKind};
 use debugless_unwrap::DebuglessUnwrap;
 use serde::de;
@@ -11,6 +9,7 @@ use taml::{
 		Reporter as diagReporter,
 	},
 	parsing::{TamlValue, VariantPayload},
+	Position,
 };
 use try_match::try_match;
 
@@ -27,15 +26,11 @@ thread_local! {
 static ENUM_VARIANT_ASSIST: fn() -> Option<serde_object::assistant::VariantKind> =
 	|| CURRENT_ENUM_VARIANT.with(Cell::take);
 
-pub struct EnumAndVariantAccess<
-	'a,
-	'b,
-	'de,
-	Position: PositionImpl,
-	Reporter: diagReporter<Position>,
->(pub &'a mut Deserializer<'b, 'de, Position, Reporter>);
-impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::EnumAccess<'de>
-	for EnumAndVariantAccess<'a, 'b, 'de, Position, Reporter>
+pub struct EnumAndVariantAccess<'a, 'b, 'de, P: Position, Reporter: diagReporter<P>>(
+	pub &'a mut Deserializer<'b, 'de, P, Reporter>,
+);
+impl<'a, 'b, 'de, P: Position, Reporter: diagReporter<P>> de::EnumAccess<'de>
+	for EnumAndVariantAccess<'a, 'b, 'de, P, Reporter>
 {
 	type Error = Error;
 
@@ -71,8 +66,8 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 		.map(|v| (v, self))
 	}
 }
-impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::VariantAccess<'de>
-	for EnumAndVariantAccess<'a, 'b, 'de, Position, Reporter>
+impl<'a, 'b, 'de, P: Position, Reporter: diagReporter<P>> de::VariantAccess<'de>
+	for EnumAndVariantAccess<'a, 'b, 'de, P, Reporter>
 {
 	type Error = Error;
 
@@ -159,21 +154,13 @@ impl<'a, 'b, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::
 	}
 }
 
-trait ReportUnexpectedVariant<Position: PositionImpl> {
-	fn report_unexpected_variant<V>(
-		self,
-		msg: &'static str,
-		key_span: Range<Position>,
-	) -> Result<V>;
+trait ReportUnexpectedVariant<P: Position> {
+	fn report_unexpected_variant<V>(self, msg: &'static str, key_span: Range<P>) -> Result<V>;
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>
-	ReportUnexpectedVariant<Position> for &mut Deserializer<'a, 'de, Position, Reporter>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> ReportUnexpectedVariant<P>
+	for &mut Deserializer<'a, 'de, P, Reporter>
 {
-	fn report_unexpected_variant<V>(
-		self,
-		msg: &'static str,
-		key_span: Range<Position>,
-	) -> Result<V> {
+	fn report_unexpected_variant<V>(self, msg: &'static str, key_span: Range<P>) -> Result<V> {
 		let enum_span = self.data.span.clone();
 		self.reporter.report_with(|| Diagnostic {
 			type_: DiagnosticType::CustomErrorFromVisitor,

@@ -2,6 +2,16 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
+## next
+
+TODO: Date
+
+- **Breaking**:
+  - Updated `taml` dependency to 0.0.11.
+    > This mainly affects carriage returns.
+    > See the changelog at <https://github.com/Tamschi/taml/releases/tag/v0.0.11>.
+  - Moved `PositionImpl` to `taml::Position`.
+
 ## 0.0.2
 
 2021-07-30

@@ -567,9 +567,9 @@ dependencies = [
 
 [[package]]
 name = "taml"
-version = "0.0.10"
+version = "0.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13b685d4da548e51c7bc95ccb5ab2806cc80bf3c734d64a0caacf8483dd790d7"
+checksum = "793af72e6921e38ea0fd32101f32c5ba7a3be81529f3a958c4a1360afa2fdf59"
 dependencies = [
  "cervine",
  "debugless-unwrap",
@@ -580,6 +580,7 @@ dependencies = [
  "logos",
  "smartstring",
  "syn",
+ "tap",
  "try_match",
 ]
 

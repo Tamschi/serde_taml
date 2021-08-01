@@ -206,19 +206,15 @@
 //!
 //! ³ Use the `"serde-object-assist"` feature to predict enum variants, if necessary.
 
+use super::Error;
 use crate::de::ErrorKind;
 use serde::de;
 use std::{cell::Cell, fmt::Display, ops::Range, thread::LocalKey};
-use taml::{
-	diagnostics::{
+use taml::{Position, diagnostics::{
 		Diagnostic, DiagnosticLabel, DiagnosticLabelPriority, DiagnosticType,
 		Reporter as diagReporter,
-	},
-	parsing::TamlValue,
-};
+	}, parsing::TamlValue};
 use tap::Pipe;
-
-use super::{Error, PositionImpl};
 
 thread_local! {
 	/// Sets a TAML data type override for the next value aside from options, which are transparent.
@@ -265,12 +261,12 @@ pub(super) enum ForcedTamlValueType {
 	Struct,
 }
 impl ForcedTamlValueType {
-	pub fn pick<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>>(
+	pub fn pick<'a, 'de, P: Position, Reporter: diagReporter<P>>(
 		self,
-		value: &'a TamlValue<'de, Position>,
-		span: &Range<Position>,
+		value: &'a TamlValue<'de, P>,
+		span: &Range<P>,
 		reporter: &mut Reporter,
-	) -> Result<&'a TamlValue<'de, Position>, Error> {
+	) -> Result<&'a TamlValue<'de, P>, Error> {
 		#[allow(
 			clippy::match_same_arms,
 			clippy::non_ascii_literal,

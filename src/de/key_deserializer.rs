@@ -1,13 +1,13 @@
-use super::{Error, PositionImpl, ReportAt, Result};
+use super::{Error, ReportAt, Result};
 use serde::{de, forward_to_deserialize_any};
-use taml::{diagnostics::Reporter as diagReporter, parsing::Key};
+use taml::{diagnostics::Reporter as diagReporter, parsing::Key, Position};
 
-pub struct KeyDeserializer<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> {
-	pub key: Key<'de, Position>,
+pub struct KeyDeserializer<'a, 'de, P: Position, Reporter: diagReporter<P>> {
+	pub key: Key<'de, P>,
 	pub reporter: &'a mut Reporter,
 }
-impl<'a, 'de, Position: PositionImpl, Reporter: diagReporter<Position>> de::Deserializer<'de>
-	for KeyDeserializer<'a, 'de, Position, Reporter>
+impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
+	for KeyDeserializer<'a, 'de, P, Reporter>
 {
 	type Error = Error;
 
