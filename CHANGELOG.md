@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable no-trailing-punctuation -->
 
-## next
+## 0.0.3
 
-TODO: Date
+2021-08-01
 
 - **Breaking**:
   - Updated `taml` dependency to 0.0.11.

@@ -6,7 +6,7 @@
 
 ![Rust 1.53](https://img.shields.io/static/v1?logo=Rust&label=&message=1.53&color=grey)
 [![CI](https://github.com/Tamschi/serde_taml/workflows/CI/badge.svg?branch=develop)](https://github.com/Tamschi/serde_taml/actions?query=workflow%3ACI+branch%3Adevelop)
-![Crates.io - License](https://img.shields.io/crates/l/serde_taml/0.0.2)
+![Crates.io - License](https://img.shields.io/crates/l/serde_taml/0.0.3)
 
 [![GitHub](https://img.shields.io/static/v1?logo=GitHub&label=&message=%20&color=grey)](https://github.com/Tamschi/serde_taml)
 [![open issues](https://img.shields.io/github/issues-raw/Tamschi/serde_taml)](https://github.com/Tamschi/serde_taml/issues)
