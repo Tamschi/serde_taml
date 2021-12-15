@@ -60,5 +60,5 @@ git_info = "0.1.2"
 indexmap = { version = "1.5.1", features = ["serde-1"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_bytes = "0.11.5"
-version-sync = "0.9.3"
+version-sync = "0.9.4"
 wasm-bindgen-test = "0.3.28"
