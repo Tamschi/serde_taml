@@ -2,6 +2,8 @@
 //!
 //! For TAML syntax help, see the latter's documentation and <https://taml.schichler.dev>.
 //!
+//! [![Zulip Chat](https://img.shields.io/endpoint?label=chat&url=https%3A%2F%2Fiteration-square-automation.schichler.dev%2F.netlify%2Ffunctions%2Fstream_subscribers_shield%3Fstream%3Dproject%252Fserde_taml)](https://iteration-square.schichler.dev/#narrow/stream/project.2Fserde_taml)
+//!
 //! # Features
 //!
 //! ## `"serde-object-assist"`
@@ -81,14 +83,12 @@
 //! See [`de::type_overrides`] for the compatibility table and standard mappings.
 
 #![doc(html_root_url = "https://docs.rs/serde_taml/0.0.3")]
-#![warn(clippy::pedantic)]
-#![allow(clippy::if_not_else, clippy::too_many_lines)]
-#![warn(missing_docs)]
+#![warn(clippy::pedantic, missing_docs)]
+#![allow(clippy::if_not_else, clippy::semicolon_if_nothing_returned, clippy::too_many_lines)]
 
 #[cfg(doctest)]
-pub mod readme {
-	doc_comment::doctest!("../README.md");
-}
+#[doc = include_str!("../README.md")]
+mod readme {}
 
 /// [Serde](`serde`)-compatible TAML deserialisation facilities.
 pub mod de;
