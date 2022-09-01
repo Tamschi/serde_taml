@@ -12,6 +12,7 @@ type tamlDiagnostic = taml::diagnostics::Diagnostic<usize>;
 
 #[derive(Debug, Deserialize)]
 struct DataLiteral {
+	#[allow(dead_code)]
 	#[serde(with = "serde_bytes")]
 	data: Vec<u8>,
 }

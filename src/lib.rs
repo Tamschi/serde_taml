@@ -84,7 +84,11 @@
 
 #![doc(html_root_url = "https://docs.rs/serde_taml/0.0.3")]
 #![warn(clippy::pedantic, missing_docs)]
-#![allow(clippy::if_not_else, clippy::semicolon_if_nothing_returned, clippy::too_many_lines)]
+#![allow(
+	clippy::if_not_else,
+	clippy::semicolon_if_nothing_returned,
+	clippy::too_many_lines
+)]
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]

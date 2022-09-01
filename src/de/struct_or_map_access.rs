@@ -40,7 +40,6 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> StructOrMapAccess<'a, 'de,
 		let is_struct = struct_fields.is_some();
 		let struct_fields = struct_fields.unwrap_or_default();
 		let fail_from_extra_fields;
-		#[allow(clippy::eval_order_dependence)]
 		Self {
 			span: span.clone(),
 			encoders,
@@ -312,7 +311,7 @@ impl<'a, 'de, Position> de::Deserializer<'de> for MissingFieldDeserializer<'a, P
 	where
 		V: de::Visitor<'de>,
 	{
-		OVERRIDE.take();
+		OVERRIDE.take_override();
 		visitor.visit_none()
 	}
 

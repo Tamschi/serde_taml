@@ -232,20 +232,20 @@ thread_local! {
 }
 
 pub(super) trait Override {
-	fn set(&'static self, force: ForcedTamlValueType);
-	fn take(&'static self) -> Option<ForcedTamlValueType>;
-	fn insert_if_none(&'static self, new_default: ForcedTamlValueType);
+	fn set_override(&'static self, force: ForcedTamlValueType);
+	fn take_override(&'static self) -> Option<ForcedTamlValueType>;
+	fn insert_override_if_none(&'static self, new_default: ForcedTamlValueType);
 }
 impl Override for LocalKey<Cell<Option<ForcedTamlValueType>>> {
-	fn set(&'static self, force: ForcedTamlValueType) {
+	fn set_override(&'static self, force: ForcedTamlValueType) {
 		self.with(|override_| override_.set(Some(force)));
 	}
 
-	fn take(&'static self) -> Option<ForcedTamlValueType> {
+	fn take_override(&'static self) -> Option<ForcedTamlValueType> {
 		self.with(Cell::take)
 	}
 
-	fn insert_if_none(&'static self, new_default: ForcedTamlValueType) {
+	fn insert_override_if_none(&'static self, new_default: ForcedTamlValueType) {
 		self.with(|this| {
 			if this.get().is_none() {
 				this.set(new_default.into());
@@ -455,7 +455,7 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::DataLiteral);
+	OVERRIDE.set_override(ForcedTamlValueType::DataLiteral);
 	T::deserialize(deserializer)
 }
 
@@ -477,7 +477,7 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::Decimal);
+	OVERRIDE.set_override(ForcedTamlValueType::Decimal);
 	T::deserialize(deserializer)
 }
 
@@ -499,7 +499,7 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::EnumVariant);
+	OVERRIDE.set_override(ForcedTamlValueType::EnumVariant);
 	T::deserialize(deserializer)
 }
 
@@ -521,7 +521,7 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::Integer);
+	OVERRIDE.set_override(ForcedTamlValueType::Integer);
 	T::deserialize(deserializer)
 }
 
@@ -543,7 +543,7 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::List);
+	OVERRIDE.set_override(ForcedTamlValueType::List);
 	T::deserialize(deserializer)
 }
 
@@ -565,7 +565,7 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::String);
+	OVERRIDE.set_override(ForcedTamlValueType::String);
 	T::deserialize(deserializer)
 }
 
@@ -587,6 +587,6 @@ where
 	D: de::Deserializer<'de>,
 	T: de::Deserialize<'de>,
 {
-	OVERRIDE.set(ForcedTamlValueType::Struct);
+	OVERRIDE.set_override(ForcedTamlValueType::Struct);
 	T::deserialize(deserializer)
 }

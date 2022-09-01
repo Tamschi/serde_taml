@@ -283,7 +283,7 @@ pub fn from_taml_tree<'de, T: de::Deserialize<'de>, P: Position>(
 	reporter: &mut impl diagReporter<P>,
 	encoders: &[(&str, &Encoder)],
 ) -> Result<T> {
-	OVERRIDE.take();
+	OVERRIDE.take_override();
 	T::deserialize(&mut Deserializer {
 		data: taml,
 		reporter,
@@ -535,7 +535,7 @@ macro_rules! parsed_integer {
 				V: de::Visitor<'de>,
 			{
 				match OVERRIDE
-					.take()
+					.take_override()
 					.assert_acceptable_and_unwrap(ForcedTamlValueType::Integer, &[])
 					.pick(&self.data.value, &self.data.span, self.reporter)?
 				{
@@ -561,7 +561,7 @@ macro_rules! parsed_decimal {
 				V: de::Visitor<'de>,
 			{
 				match OVERRIDE
-					.take()
+					.take_override()
 					.assert_acceptable_and_unwrap(ForcedTamlValueType::Decimal, &[ForcedTamlValueType::Integer])
 					.pick(&self.data.value, &self.data.span, self.reporter)?
 				{
@@ -595,7 +595,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 	where
 		V: de::Visitor<'de>,
 	{
-		match if let Some(o) = OVERRIDE.take() {
+		match if let Some(o) = OVERRIDE.take_override() {
 			o.pick(&self.data.value, &self.data.span, self.reporter)?
 		} else {
 			&self.data.value
@@ -604,6 +604,9 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 			TamlValue::DataLiteral(data_literal) => {
 				visitor.visit_data_literal(data_literal, self.encoders, self.reporter)
 			}
+
+			// Doesn't distinguish by inferred generic type parameters.
+			#[allow(clippy::same_functions_in_if_condition)]
 			TamlValue::Integer(i) => if let Ok(i) = i.parse() {
 				visitor.visit_u8(i)
 			} else if let Ok(i) = i.parse() {
@@ -665,7 +668,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(
 				ForcedTamlValueType::EnumVariant,
 				&[ForcedTamlValueType::String, ForcedTamlValueType::Integer],
@@ -715,7 +718,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(
 				ForcedTamlValueType::String,
 				&[
@@ -755,7 +758,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(
 				ForcedTamlValueType::String,
 				&[
@@ -798,7 +801,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(
 				ForcedTamlValueType::DataLiteral,
 				&[ForcedTamlValueType::String],
@@ -848,7 +851,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(ForcedTamlValueType::List, &[ForcedTamlValueType::Struct])
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
@@ -871,7 +874,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 	where
 		V: de::Visitor<'de>,
 	{
-		OVERRIDE.insert_if_none(ForcedTamlValueType::Struct);
+		OVERRIDE.insert_override_if_none(ForcedTamlValueType::Struct);
 		self.deserialize_unit(visitor)
 	}
 
@@ -891,7 +894,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(ForcedTamlValueType::List, &[])
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
@@ -911,7 +914,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(ForcedTamlValueType::List, &[])
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
@@ -951,7 +954,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(ForcedTamlValueType::Struct, &[])
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
@@ -983,7 +986,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(ForcedTamlValueType::Struct, &[])
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
@@ -1015,7 +1018,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 		V: de::Visitor<'de>,
 	{
 		match OVERRIDE
-			.take()
+			.take_override()
 			.assert_acceptable_and_unwrap(ForcedTamlValueType::EnumVariant, &[])
 			.pick(&self.data.value, &self.data.span, self.reporter)?
 		{
@@ -1034,7 +1037,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 	where
 		V: de::Visitor<'de>,
 	{
-		OVERRIDE.insert_if_none(ForcedTamlValueType::EnumVariant);
+		OVERRIDE.insert_override_if_none(ForcedTamlValueType::EnumVariant);
 		self.deserialize_str(visitor)
 	}
 
@@ -1042,7 +1045,7 @@ impl<'a, 'de, P: Position, Reporter: diagReporter<P>> de::Deserializer<'de>
 	where
 		V: de::Visitor<'de>,
 	{
-		if let Some(o) = OVERRIDE.take() {
+		if let Some(o) = OVERRIDE.take_override() {
 			o.pick(&self.data.value, &self.data.span, self.reporter)?;
 		}
 

@@ -284,6 +284,7 @@ fn extra_fields() {
 struct IgnoredExtraFields {
 	known: String,
 
+	#[allow(dead_code)]
 	#[educe(PartialEq(ignore))]
 	#[serde(rename = "taml::extra_fields")]
 	extra_fields: IgnoredAny,
