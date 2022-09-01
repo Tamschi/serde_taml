@@ -2,7 +2,7 @@
 name = "serde_taml"
 version = "0.0.3"
 authors = ["Tamme Schichler <tamme@schichler.dev>"]
-edition = "2018"
+edition = "2021"
 description = "Serde-integration for TAML, a kind-to-humans configuration language"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Tamschi/serde_taml"
